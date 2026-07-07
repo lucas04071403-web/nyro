@@ -1,9 +1,11 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:nyro/core/preferences/preferences_provider.dart';
+import 'package:nyro/features/connection/notifier/connection_notifier.dart';
 import 'package:nyro/features/profile/data/profile_data_providers.dart';
 import 'package:nyro/features/profile/data/profile_parser.dart';
 import 'package:nyro/features/profile/model/profile_entity.dart';
 import 'package:nyro/features/profile/notifier/active_profile_notifier.dart';
+import 'package:nyro/features/settings/data/config_option_repository.dart';
 import 'package:nyro/features/xboard/data/xboard_providers.dart';
 import 'package:nyro/features/xboard/model/xboard_models.dart';
 import 'package:nyro/utils/custom_loggers.dart';
@@ -18,6 +20,9 @@ class XboardAuthNotifier extends StateNotifier<AsyncValue<XboardAccount?>> with 
   }
 
   static const _authDataKey = 'xboard_auth_data';
+  static const _managedByHeader = 'nyro-managed-by';
+  static const _xboardSubscribeUrlHeader = 'nyro-xboard-subscribe-url';
+  static const _managedByXboard = 'xboard';
 
   final Ref ref;
 
@@ -73,8 +78,12 @@ class XboardAuthNotifier extends StateNotifier<AsyncValue<XboardAccount?>> with 
   }
 
   Future<void> logout() async {
+    final account = state.valueOrNull;
+    state = const AsyncLoading();
+    await _clearSyncedProfilesSafely(account);
     await ref.read(sharedPreferencesProvider).requireValue.remove(_authDataKey);
     state = const AsyncData(null);
+    _refreshProfileProviders();
   }
 
   Future<bool> ensureActiveProfileSynced() async {
@@ -89,13 +98,16 @@ class XboardAuthNotifier extends StateNotifier<AsyncValue<XboardAccount?>> with 
           ? state.valueOrNull!
           : await ref.read(xboardApiClientProvider).getAccount(authData);
       final synced = await _syncActiveProfile(account);
+      if (synced) _refreshProfileProviders();
       state = AsyncData(account);
       return synced;
     } on XboardApiException catch (error, stackTrace) {
       loggy.warning('failed to ensure Xboard profile sync', error, stackTrace);
       if (error.isUnauthorized) {
         await ref.read(sharedPreferencesProvider).requireValue.remove(_authDataKey);
+        await _clearSyncedProfilesSafely(null);
         state = const AsyncData(null);
+        _refreshProfileProviders();
       }
       return false;
     } catch (error, stackTrace) {
@@ -112,6 +124,8 @@ class XboardAuthNotifier extends StateNotifier<AsyncValue<XboardAccount?>> with 
       } on XboardApiException catch (error) {
         if (clearOnUnauthorized && error.isUnauthorized) {
           await ref.read(sharedPreferencesProvider).requireValue.remove(_authDataKey);
+          await _clearSyncedProfilesSafely(null);
+          _refreshProfileProviders();
           return null;
         }
         rethrow;
@@ -121,7 +135,8 @@ class XboardAuthNotifier extends StateNotifier<AsyncValue<XboardAccount?>> with 
 
   Future<XboardAccount> _getAccountAndSyncProfile(String authData) async {
     final account = await ref.read(xboardApiClientProvider).getAccount(authData);
-    await _syncActiveProfile(account);
+    final synced = await _syncActiveProfile(account);
+    if (synced) _refreshProfileProviders();
     return account;
   }
 
@@ -138,8 +153,7 @@ class XboardAuthNotifier extends StateNotifier<AsyncValue<XboardAccount?>> with 
     }
 
     final subscribeUrl = account.subscribeUrl.trim();
-    final planName = account.plan?.name.trim();
-    final profileName = planName != null && planName.isNotEmpty ? planName : 'Xboard';
+    final profileName = _profileNameForAccount(account);
     final userOverride = UserOverride(name: profileName, updateInterval: 6);
     final profileHeaders = _xboardProfileHeaders(account);
 
@@ -199,7 +213,10 @@ class XboardAuthNotifier extends StateNotifier<AsyncValue<XboardAccount?>> with 
   }
 
   Map<String, dynamic> _xboardProfileHeaders(XboardAccount account) {
+    final subscribeUrl = account.subscribeUrl.trim();
     return {
+      _managedByHeader: _managedByXboard,
+      if (subscribeUrl.isNotEmpty) _xboardSubscribeUrlHeader: subscribeUrl,
       'profile-update-interval': '6',
       'connection-test-url': 'http://www.gstatic.com/generate_204',
       'url-test-interval': 300,
@@ -273,5 +290,123 @@ class XboardAuthNotifier extends StateNotifier<AsyncValue<XboardAccount?>> with 
       loggy.warning('failed to sync Xboard compatible subscription profile', error, stackTrace);
       return false;
     }
+  }
+
+  Future<void> _clearSyncedProfiles(XboardAccount? account) async {
+    final profiles = await _readProfiles();
+    final profilesToDelete = profiles.where((profile) => _isXboardSyncedProfile(profile, account)).toList()
+      ..sort((a, b) {
+        if (a.active == b.active) return 0;
+        return a.active ? 1 : -1;
+      });
+
+    if (profilesToDelete.isEmpty) return;
+    if (profilesToDelete.any((profile) => profile.active)) {
+      await ref.read(connectionNotifierProvider.notifier).abortConnection();
+    }
+
+    final repository = ref.read(profileRepositoryProvider).requireValue;
+    final deletedProfileIds = <String>{};
+    for (final profile in profilesToDelete) {
+      final result = await repository.deleteById(profile.id, profile.active).run();
+      result.match((error) => loggy.warning('failed to delete Xboard subscription profile [${profile.id}]', error), (
+        _,
+      ) {
+        deletedProfileIds.add(profile.id);
+        loggy.info('deleted Xboard subscription profile [${profile.id}]');
+      });
+    }
+
+    if (deletedProfileIds.isEmpty) return;
+
+    final remainingProfiles = await _readProfiles();
+    String? activeProfileId;
+    for (final profile in remainingProfiles) {
+      if (profile.active) {
+        activeProfileId = profile.id;
+        break;
+      }
+    }
+    await _repairDeletedProfileReferences(deletedProfileIds, activeProfileId);
+    _refreshProfileProviders();
+  }
+
+  Future<void> _clearSyncedProfilesSafely(XboardAccount? account) async {
+    try {
+      await _clearSyncedProfiles(account);
+    } catch (error, stackTrace) {
+      loggy.warning('failed to clear Xboard subscription profiles', error, stackTrace);
+    }
+  }
+
+  Future<List<ProfileEntity>> _readProfiles() async {
+    final repository = ref.read(profileRepositoryProvider).requireValue;
+    final result = await repository.watchAll().first;
+    return result.match((error) {
+      loggy.warning('failed to read profiles for Xboard cleanup', error);
+      return <ProfileEntity>[];
+    }, (profiles) => profiles);
+  }
+
+  Future<void> _repairDeletedProfileReferences(Set<String> deletedProfileIds, String? fallbackProfileId) async {
+    if (deletedProfileIds.contains(ref.read(ConfigOptions.extraSecurityProfileId))) {
+      await ref.read(ConfigOptions.extraSecurityProfileId.notifier).update(fallbackProfileId);
+    }
+    if (deletedProfileIds.contains(ref.read(ConfigOptions.unblockerProfileId))) {
+      await ref.read(ConfigOptions.unblockerProfileId.notifier).update(fallbackProfileId);
+    }
+  }
+
+  bool _isXboardSyncedProfile(ProfileEntity profile, XboardAccount? account) {
+    if (_isMarkedXboardProfile(profile)) return true;
+    if (_matchesXboardSubscribeUrl(profile, account)) return true;
+    return _looksLikeLegacyXboardProfile(profile, account);
+  }
+
+  bool _isMarkedXboardProfile(ProfileEntity profile) {
+    final headers = profile.populatedHeaders;
+    if (headers == null) return false;
+
+    final managedBy = headers[_managedByHeader]?.toString().trim().toLowerCase();
+    if (managedBy == _managedByXboard) return true;
+
+    final subscribeUrl = headers[_xboardSubscribeUrlHeader]?.toString().trim();
+    return subscribeUrl != null && subscribeUrl.isNotEmpty;
+  }
+
+  bool _matchesXboardSubscribeUrl(ProfileEntity profile, XboardAccount? account) {
+    final subscribeUrl = account?.subscribeUrl.trim();
+    if (subscribeUrl == null || subscribeUrl.isEmpty) return false;
+
+    final headerUrl = profile.populatedHeaders?[_xboardSubscribeUrlHeader]?.toString().trim();
+    if (headerUrl == subscribeUrl) return true;
+
+    return switch (profile) {
+      RemoteProfileEntity(:final url) => url.trim() == subscribeUrl,
+      LocalProfileEntity() => false,
+    };
+  }
+
+  bool _looksLikeLegacyXboardProfile(ProfileEntity profile, XboardAccount? account) {
+    if (account == null) return false;
+
+    final profileName = _profileNameForAccount(account);
+    final nameMatches = profile.name == profileName || profile.userOverride?.name == profileName;
+    if (!nameMatches || profile.userOverride?.updateInterval != 6) return false;
+
+    final headers = profile.populatedHeaders ?? {};
+    return headers['connection-test-url'] == 'http://www.gstatic.com/generate_204' &&
+        headers['remote-dns-address'] == 'https://1.1.1.1/dns-query' &&
+        headers['direct-dns-address'] == '223.5.5.5';
+  }
+
+  String _profileNameForAccount(XboardAccount account) {
+    final planName = account.plan?.name.trim();
+    return planName != null && planName.isNotEmpty ? planName : 'Xboard';
+  }
+
+  void _refreshProfileProviders() {
+    ref.invalidate(activeProfileProvider);
+    ref.invalidate(hasAnyProfileProvider);
   }
 }

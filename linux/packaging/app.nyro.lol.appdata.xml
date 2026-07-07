@@ -72,6 +72,11 @@
   </provides>
 
   <releases>
+    <release version="1.0.2" date="2026-07-08">
+      <description>
+        <p>Refresh the desktop home UI and fix Xboard subscription sync, cleanup, and sing-box node filtering.</p>
+      </description>
+    </release>
     <release version="1.0.1" date="2026-07-07">
       <description>
         <p>Add Xboard registration, plan purchase, and current plan status in subscriptions.</p>

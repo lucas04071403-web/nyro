@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:gap/gap.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:nyro/core/localization/translations.dart';
 import 'package:nyro/core/router/bottom_sheets/bottom_sheets_notifier.dart';
 import 'package:nyro/core/router/dialog/dialog_notifier.dart';
@@ -14,7 +14,6 @@ import 'package:nyro/features/proxy/active/active_proxy_notifier.dart';
 import 'package:nyro/features/settings/notifier/config_option/config_option_notifier.dart';
 import 'package:nyro/features/xboard/notifier/xboard_auth_notifier.dart';
 import 'package:nyro/gen/assets.gen.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 // TODO: rewrite
 class ConnectionButton extends HookConsumerWidget {
@@ -215,65 +214,122 @@ class _ConnectionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final controlColor = enabled ? buttonColor : scheme.onSurfaceVariant;
+    final auraColor = enabled ? newButtonColor : scheme.outline;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // CircleDesignWidget(newButtonColor: newButtonColor, onTap: onTap, animated: animated),
         Semantics(
           button: true,
           enabled: enabled,
           label: label,
-          child: Container(
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [BoxShadow(blurRadius: 16, color: buttonColor.withValues(alpha: .5))],
-            ),
-            width: 148,
-            height: 148,
-            child: Material(
-              key: const ValueKey("home_connection_button"),
-              shape: const CircleBorder(),
-              color: Colors.white,
-              child: InkWell(
-                focusColor: Colors.grey,
-                onTap: onTap,
-                child: Padding(
-                  padding: const EdgeInsets.all(36),
-                  child: TweenAnimationBuilder(
-                    tween: ColorTween(end: buttonColor),
-                    duration: const Duration(milliseconds: 250),
-                    builder: (context, value, child) {
-                      if (useImage) {
-                        return image.image();
-                      } else {
-                        return Assets.images.logo.svg(colorFilter: ColorFilter.mode(value!, BlendMode.srcIn));
-                      }
-                    },
-                  ),
+          child: AnimatedScale(
+            scale: enabled ? 1 : .9,
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            child: AnimatedOpacity(
+              opacity: enabled ? 1 : .58,
+              duration: const Duration(milliseconds: 180),
+              child: SizedBox.square(
+                dimension: 176,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 260),
+                      curve: Curves.easeOutCubic,
+                      width: animated ? 172 : 158,
+                      height: animated ? 172 : 158,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: auraColor.withValues(alpha: isDark ? .1 : .08),
+                        boxShadow: [
+                          BoxShadow(
+                            color: auraColor.withValues(alpha: animated ? .26 : .15),
+                            blurRadius: animated ? 38 : 26,
+                            spreadRadius: animated ? 4 : 0,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Material(
+                      key: const ValueKey("home_connection_button"),
+                      color: scheme.surface.withValues(alpha: isDark ? .82 : .94),
+                      shape: CircleBorder(side: BorderSide(color: scheme.outlineVariant.withValues(alpha: .55))),
+                      elevation: isDark ? 0 : 6,
+                      shadowColor: scheme.shadow.withValues(alpha: .12),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: enabled ? onTap : null,
+                        child: SizedBox.square(
+                          dimension: 150,
+                          child: Center(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 260),
+                              curve: Curves.easeOutCubic,
+                              width: 82,
+                              height: 82,
+                              decoration: BoxDecoration(
+                                color: controlColor,
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: controlColor.withValues(alpha: .28),
+                                    blurRadius: 18,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: useImage
+                                    ? Padding(
+                                        padding: const EdgeInsets.all(14),
+                                        child: image.image(fit: BoxFit.contain),
+                                      )
+                                    : Assets.images.logo.svg(
+                                        height: 42,
+                                        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ).animate(target: enabled ? 0 : 1).blurXY(end: 1),
-          ).animate(target: enabled ? 0 : 1).scaleXY(end: .88, curve: Curves.easeIn),
+            ),
+          ),
         ),
-        const Gap(16),
+        const Gap(14),
         ExcludeSemantics(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              AnimatedText(label, style: Theme.of(context).textTheme.titleMedium),
+              AnimatedText(
+                label,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: scheme.onSurface,
+                  letterSpacing: 0,
+                ),
+              ),
               if (secureLabel.isNotEmpty) ...[
+                const Gap(4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // const Gap(8),
-                    FaIcon(FontAwesomeIcons.shieldHalved, size: 16, color: Theme.of(context).colorScheme.secondary),
-                    const Gap(4),
+                    FaIcon(FontAwesomeIcons.shieldHalved, size: 14, color: scheme.secondary),
+                    const Gap(5),
                     Text(
                       secureLabel,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.secondary),
+                      style: theme.textTheme.titleSmall?.copyWith(color: scheme.secondary, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),

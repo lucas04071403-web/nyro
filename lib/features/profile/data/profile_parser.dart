@@ -58,6 +58,8 @@ class ProfileParser {
     'enable-warp',
     'enable-psiphon',
     'enable-fragment',
+    'nyro-managed-by',
+    'nyro-xboard-subscribe-url',
   ];
 
   final Ref _ref;

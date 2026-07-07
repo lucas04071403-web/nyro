@@ -17,7 +17,9 @@ class AppInfoEntity with _$AppInfoEntity {
     required Environment environment,
   }) = _AppInfoEntity;
 
-  String get userAgent => "Nyro/$version ($operatingSystem) like ClashMeta v2ray sing-box";
+  // Xboard reads the first known client/version token for protocol filtering.
+  // Put sing-box first so it does not treat Nyro's app version as the core version.
+  String get userAgent => "sing-box 1.13.0 Nyro/$version ($operatingSystem) like ClashMeta v2ray";
 
   String get presentVersion => version;
 

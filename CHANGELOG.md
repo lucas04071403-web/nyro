@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.0.2 - 2026-07-08
+
+### Added
+
+- macOS-inspired desktop home, sidebar, profile, connection, active proxy, and
+  quick settings dock styling.
+
+### Changed
+
+- Xboard login now syncs the subscription profile to the home page
+  automatically.
+- Xboard logout now clears the synced subscription profile automatically.
+- Xboard subscription requests now identify as sing-box first so the panel keeps
+  modern protocol nodes and current sing-box templates.
+
+### Fixed
+
+- Fixed duplicate brand/version elements and stray help icons on the desktop
+  home page.
+- Fixed the desktop home page overflow stripe when connecting.
+- Fixed Xboard/sing-box subscription filtering that left only a few Shadowsocks
+  nodes visible.
+- Fixed newer sing-box subscription imports by avoiding legacy DNS outbound
+  template selection.
+
 ## 1.0.1 - 2026-07-07
 
 ### Added

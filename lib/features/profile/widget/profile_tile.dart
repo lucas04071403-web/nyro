@@ -1,9 +1,12 @@
+import 'dart:ui';
+
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:nyro/core/localization/translations.dart';
 import 'package:nyro/core/model/constants.dart';
 import 'package:nyro/core/model/failures.dart';
@@ -18,8 +21,6 @@ import 'package:nyro/features/profile/notifier/profile_notifier.dart';
 import 'package:nyro/features/profile/overview/profiles_notifier.dart';
 import 'package:nyro/gen/fonts.gen.dart';
 import 'package:nyro/utils/utils.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileTile extends HookConsumerWidget {
@@ -52,6 +53,23 @@ class ProfileTile extends HookConsumerWidget {
     };
 
     final showActionButton = profile is RemoteProfileEntity || !isMain;
+    final VoidCallback openProfileOverview = () {
+      if (Breakpoint(context).isMobile()) {
+        ref.read(bottomSheetsNotifierProvider.notifier).showProfilesOverview();
+      } else {
+        context.goNamed('profiles');
+      }
+    };
+
+    if (isMain) {
+      return _MainProfileTile(
+        profile: profile,
+        subInfo: subInfo,
+        margin: margin,
+        showActionButton: showActionButton,
+        onTap: openProfileOverview,
+      );
+    }
 
     // final effectiveMargin = isMain ? const EdgeInsets.symmetric(horizontal: 16, vertical: 8) : const EdgeInsets.only(left: 12, right: 12, bottom: 12);
     // final double effectiveElevation = profile.active ? 12 : 4;
@@ -94,23 +112,15 @@ class ProfileTile extends HookConsumerWidget {
                         ? ProfileTileConst.endBorderRadius(Directionality.of(context))
                         : ProfileTileConst.cardBorderRadius,
                     onTap: () {
-                      if (isMain) {
-                        if (Breakpoint(context).isMobile()) {
-                          ref.read(bottomSheetsNotifierProvider.notifier).showProfilesOverview();
-                        } else {
-                          context.goNamed('profiles');
-                        }
+                      if (selectActiveMutation.state.isInProgress) return;
+                      // if (profile.active) return;
+                      selectActiveMutation.setFuture(
+                        ref.read(profilesNotifierProvider.notifier).selectActiveProfile(profile.id),
+                      );
+                      if (context.canPop()) {
+                        context.pop();
                       } else {
-                        if (selectActiveMutation.state.isInProgress) return;
-                        // if (profile.active) return;
-                        selectActiveMutation.setFuture(
-                          ref.read(profilesNotifierProvider.notifier).selectActiveProfile(profile.id),
-                        );
-                        if (context.canPop()) {
-                          context.pop();
-                        } else {
-                          context.goNamed('home');
-                        }
+                        context.goNamed('home');
                       }
                     },
                     child: Padding(
@@ -174,6 +184,165 @@ class ProfileTile extends HookConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _MainProfileTile extends ConsumerWidget {
+  const _MainProfileTile({
+    required this.profile,
+    required this.subInfo,
+    required this.margin,
+    required this.showActionButton,
+    required this.onTap,
+  });
+
+  final ProfileEntity profile;
+  final SubscriptionInfo? subInfo;
+  final EdgeInsets margin;
+  final bool showActionButton;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(translationsProvider).requireValue;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Semantics(
+      button: true,
+      sortKey: const OrdinalSortKey(0),
+      focused: true,
+      liveRegion: true,
+      namesRoute: true,
+      label: t.pages.profiles.viewAllProfiles,
+      child: Container(
+        margin: margin,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(22),
+                child: Ink(
+                  decoration: BoxDecoration(
+                    color: scheme.surface.withValues(alpha: isDark ? .58 : .78),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: scheme.outlineVariant.withValues(alpha: isDark ? .36 : .58)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: scheme.shadow.withValues(alpha: isDark ? .22 : .08),
+                        blurRadius: 24,
+                        offset: const Offset(0, 14),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 16, 16, 16),
+                    child: Row(
+                      children: [
+                        _ProfileStatusBadge(active: profile.active),
+                        const Gap(14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      profile.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0,
+                                        fontFamily: PlatformUtils.isWindows ? FontFamily.emoji : null,
+                                      ),
+                                      semanticsLabel: t.pages.profiles.activeProfileName(name: profile.name),
+                                    ),
+                                  ),
+                                  const Gap(8),
+                                  Icon(Icons.expand_more_rounded, size: 18, color: scheme.onSurfaceVariant),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                t.pages.profiles.viewAllProfiles,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                              ),
+                              if (subInfo != null) ...[
+                                const SizedBox(height: 12),
+                                RemainingTrafficIndicator(subInfo!.ratio),
+                                const SizedBox(height: 8),
+                                ProfileSubscriptionInfo(subInfo!),
+                              ],
+                            ],
+                          ),
+                        ),
+                        if (showActionButton) ...[
+                          const Gap(14),
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: scheme.primary.withValues(alpha: .1),
+                              borderRadius: BorderRadius.circular(13),
+                            ),
+                            child: SizedBox.square(dimension: 42, child: ProfileActionButton(profile, false)),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileStatusBadge extends StatelessWidget {
+  const _ProfileStatusBadge({required this.active});
+
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final statusColor = active ? scheme.primary : scheme.onSurfaceVariant;
+
+    return Container(
+      width: 52,
+      height: 52,
+      decoration: BoxDecoration(color: statusColor.withValues(alpha: .12), borderRadius: BorderRadius.circular(15)),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Icon(Icons.account_circle_rounded, color: statusColor, size: 28),
+          PositionedDirectional(
+            end: 10,
+            bottom: 10,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: active ? const Color(0xFF34C759) : scheme.outline,
+                shape: BoxShape.circle,
+                border: Border.all(color: scheme.surface, width: 1.5),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
