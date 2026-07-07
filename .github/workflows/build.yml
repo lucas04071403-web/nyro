@@ -21,6 +21,7 @@ env:
   TAG_NAME: "${{ inputs.tag_name }}"
   HAS_WINDOWS_SIGNING_KEY: "${{ secrets.WINDOWS_SIGNING_KEY != '' }}"
   HAS_GOOGLE_PLAY_SERVICE_ACCOUNT: "${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON != '' }}"
+  HAS_SENTRY: "${{ secrets.SENTRY_AUTH_TOKEN != '' && secrets.SENTRY_ORG != '' && secrets.SENTRY_PROJECT != '' }}"
   ASSET_PREFIX: "Nyro-${{ inputs.tag_name }}"
   TARGET_NAME_gz: "Nyro-${{ inputs.tag_name }}-Linux-x86_64.AppImage.tar"
   TARGET_NAME_AppImage: "Nyro-${{ inputs.tag_name }}-Linux-x86_64"
@@ -317,17 +318,14 @@ jobs:
           Get-ChildItem -Path out
           
       - name: Upload Debug Symbols
-        if: ${{ inputs.upload-artifact && inputs.tag_name != 'draft' }}
+        if: ${{ inputs.upload-artifact && inputs.tag_name != 'draft' && env.HAS_SENTRY == 'true' }}
+        shell: bash
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           SENTRY_DIST: ${{ matrix.platform == 'android-aab' && 'google-play' || 'general' }}
         run: |
-          if [ -z "$SENTRY_AUTH_TOKEN" ] || [ -z "$SENTRY_ORG" ] || [ -z "$SENTRY_PROJECT" ]; then
-            echo "Sentry secrets are not configured; skipping debug symbol upload."
-            exit 0
-          fi
           dart pub global activate sentry_dart_plugin
           dart run sentry_dart_plugin 
       
