@@ -75,12 +75,16 @@ and attribution details are included in `LICENSE.md`, `NOTICE.md`, and
 
 ## 更新记录
 
-- 新增 Xboard 邮箱验证码注册流程，注册成功后自动登录并同步用户中心。
-- 用户中心支持登录/注册切换、验证码发送倒计时、注册表单校验和账户信息刷新。
-- 订阅页接入 Xboard 套餐购买流程，支持选择周期、选择支付方式、创建订单、打开易支付/扫码支付并轮询订单状态。
-- 支付成功后自动刷新 Xboard 用户信息、订阅信息和套餐列表。
-- 订阅列表会根据当前用户的套餐 `plan.id` 显示「当前套餐」，购买后可直观看到已生效套餐。
-- 修复 Android 发布构建与 `hiddify-core v4.1.0` API 不一致导致的 Kotlin 编译失败。
+- 重写桌面端首页第一版 UI：侧边栏、首页 Header、Profile 主卡、连接按钮、当前代理底部状态区和底部 Quick Settings dock。
+- 首页采用更接近 macOS 系统工具的视觉风格，优化桌面优先布局、卡片层级、图标按钮、间距和连接状态表现。
+- 登录 Xboard 后会自动同步订阅配置到主页，不再需要先点击连接才触发同步。
+- 退出登录后会自动清除由 Xboard 同步的订阅配置，避免旧账号配置残留。
+- 订阅配置增加 Xboard 管理标记，便于后续识别、更新和安全清理自动同步的配置。
+- 修复桌面端连接后底部黄黑溢出纹路遮挡问题。
+- 修复主页右侧重复显示品牌图标、版本号和多余帮助图标的问题。
+- 修复 Xboard/sing-box 订阅被面板误判为低版本客户端后只显示少量 Shadowsocks 节点的问题。
+- 调整订阅请求的 User-Agent，让面板优先识别为新版 sing-box，从而保留 VLESS/Reality 等现代协议节点并使用新版 sing-box 模板。
+- 修复新版 sing-box 配置导入时因旧版 `type: dns` outbound 模板兼容性导致的报错。
 - 发布 Android、Windows、macOS、Linux 多平台安装包。
 
 **完整变更记录：** [HISTORY.md](https://github.com/RELEASE_REPOSITORY/blob/main/HISTORY.md)
