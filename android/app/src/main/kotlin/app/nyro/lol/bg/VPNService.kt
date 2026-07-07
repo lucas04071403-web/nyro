@@ -112,10 +112,7 @@ class VPNService : VpnService(), PlatformInterfaceWrapper {
         }
 
         if (options.autoRoute) {
-            val dnsServerAddress = options.dnsServerAddress
-            while (dnsServerAddress.hasNext()) {
-                builder.addDnsServer(dnsServerAddress.next())
-            }
+            builder.addDnsServer(options.dnsServerAddress.value)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val inet4RouteAddress = options.inet4RouteAddress

@@ -67,8 +67,19 @@ and attribution details are included in `LICENSE.md`, `NOTICE.md`, and
 
 ## 使用方式
 
-- 正式发布：推送 `vX.Y.Z` tag 后自动构建并创建 GitHub Release。
-- 预发布：推送 `vX.Y.Z.dev` tag，Release 会标记为 pre-release。
-- 草稿构建：在 GitHub Actions 的 Release 工作流中手动运行，`tag_name` 填 `draft`。
+1. 根据你的系统下载上表推荐安装包；不确定 Android 架构时优先选择 `Universal APK`。
+2. 安装并打开 Nyro。Android 需要允许安装来自浏览器或文件管理器的 APK；macOS 如出现安全提示，可在系统设置的安全性页面允许打开。
+3. 添加配置：复制订阅链接后在 Nyro 中选择添加配置，或直接打开 `nyro://`、`v2ray://`、`clash://`、`sing-box://` 等分享链接导入。
+4. 选择配置后点击连接。连接成功后，可在系统代理、TUN/VPN、分应用代理、路由规则等页面按需调整。
+5. 后续更新可以在应用内检查，也可以回到本页下载最新版本安装覆盖。
+
+## 更新记录
+
+- 发布 Nyro 第一个正式版本 `RELEASE_TAG`。
+- 提供 Android、Windows、macOS、Linux 多平台安装包。
+- 统一 Nyro 应用名称、包名、协议名、安装器名称和发布下载地址。
+- 更新独立的 Nyro GitHub Release 与应用更新检查通道。
+- 保留合规声明：Nyro 基于 Hiddify App，并由 Hiddify Core 与 Sing-box 提供核心能力。
+- 新增 `NOTICE.md` 与 `ACKNOWLEDGEMENTS.md`，明确上游来源、许可证和致谢信息。
 
 **完整变更记录：** [HISTORY.md](https://github.com/RELEASE_REPOSITORY/blob/main/HISTORY.md)
