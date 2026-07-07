@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.0.1 (2026-07-07)
+
+### New
+
+- Added Xboard email verification registration.
+- Added login/register switching in the user center with email code sending,
+  countdown state, and registration form validation.
+- Added Xboard subscription purchase flow with plan period selection, payment
+  method selection, order creation, Epay or QR checkout, and payment polling.
+- Added automatic Xboard account and subscription refresh after successful
+  payment.
+- Added "current plan" status on the purchased plan in the subscription list.
+
+### Fixed
+
+- Fixed Android release builds against the `hiddify-core v4.1.0` Android API.
 
 ## 1.0.0 (2026-07-07)
 

@@ -75,11 +75,12 @@ and attribution details are included in `LICENSE.md`, `NOTICE.md`, and
 
 ## 更新记录
 
-- 发布 Nyro 第一个正式版本 `RELEASE_TAG`。
-- 提供 Android、Windows、macOS、Linux 多平台安装包。
-- 统一 Nyro 应用名称、包名、协议名、安装器名称和发布下载地址。
-- 更新独立的 Nyro GitHub Release 与应用更新检查通道。
-- 保留合规声明：Nyro 基于 Hiddify App，并由 Hiddify Core 与 Sing-box 提供核心能力。
-- 新增 `NOTICE.md` 与 `ACKNOWLEDGEMENTS.md`，明确上游来源、许可证和致谢信息。
+- 新增 Xboard 邮箱验证码注册流程，注册成功后自动登录并同步用户中心。
+- 用户中心支持登录/注册切换、验证码发送倒计时、注册表单校验和账户信息刷新。
+- 订阅页接入 Xboard 套餐购买流程，支持选择周期、选择支付方式、创建订单、打开易支付/扫码支付并轮询订单状态。
+- 支付成功后自动刷新 Xboard 用户信息、订阅信息和套餐列表。
+- 订阅列表会根据当前用户的套餐 `plan.id` 显示「当前套餐」，购买后可直观看到已生效套餐。
+- 修复 Android 发布构建与 `hiddify-core v4.1.0` API 不一致导致的 Kotlin 编译失败。
+- 发布 Android、Windows、macOS、Linux 多平台安装包。
 
 **完整变更记录：** [HISTORY.md](https://github.com/RELEASE_REPOSITORY/blob/main/HISTORY.md)
