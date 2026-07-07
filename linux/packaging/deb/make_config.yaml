@@ -1,0 +1,61 @@
+display_name: Nyro
+package_name: nyro
+maintainer:
+  name: nyro
+  email: linux@nyro.lol
+
+priority: optional
+section: x11
+installed_size: 6604
+essential: false
+icon: assets/images/source/ic_launcher_border.png
+
+# Post-installation tasks:
+# 1. Inject StartupWMClass into the system .desktop file for correct icon association
+# 2. Remove conflicting nyro.desktop files from users' .local directories (cleanup AppImage artifacts)
+# 3. Update the desktop database to apply changes immediately
+postinstall_scripts:
+  - echo "Setting up Nyro..."
+  - sudo sed -i '/^\[Desktop Entry\]/a StartupWMClass=app.nyro.lol' "/usr/share/applications/nyro.desktop"
+  - echo "Search and remove nyro.desktop from .local"
+  - for user_dir in /home/*; do if [ -f "$user_dir/.local/share/applications/nyro.desktop" ]; then rm -f "$user_dir/.local/share/applications/nyro.desktop"; echo "Found and removed nyro.desktop from $user_dir .local"; fi; done
+  - update-desktop-database /usr/share/applications
+  - echo "Nyro is ready to use :)"
+
+# Post-uninstallation tasks:
+# 1. Iterate through all user directories to remove Nyro configuration and data
+# 2. Clean up root user data to ensure a clean removal
+postuninstall_scripts:
+  - echo "Removing Nyro user data..."
+  - for user_dir in /home/*; do if [ -d "$user_dir/.local/share/nyro" ]; then rm -rf "$user_dir/.local/share/nyro"; echo "Removed data from $user_dir"; fi; done
+  - rm -rf /root/.local/share/nyro
+  - echo "Nyro data cleanup complete."
+
+keywords:
+  - Nyro
+  - Proxy
+  - VPN
+  - V2ray
+  - Nekoray
+  - Xray
+  - Psiphon
+  - OpenVPN
+
+generic_name: Nyro
+
+categories:
+  - Network
+
+startup_notify: true
+# app_links setup for Linux
+# https://github.com/llfbandit/app_links/blob/master/doc/README_linux.md
+supported_mime_type:
+  - x-scheme-handler/nyro
+  - x-scheme-handler/v2ray
+  - x-scheme-handler/v2rayn
+  - x-scheme-handler/v2rayng
+  - x-scheme-handler/clash
+  - x-scheme-handler/clashmeta
+  - x-scheme-handler/sing-box
+
+metainfo: linux/packaging/app.nyro.lol.appdata.xml

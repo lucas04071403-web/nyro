@@ -1,0 +1,31 @@
+{
+  "pins" : [
+    {
+      "identity" : "csqlite",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/simolus3/CSQLite.git",
+      "state" : {
+        "revision" : "7b5bfc02122b8c64dabad2d0e2b45227ff469db1"
+      }
+    },
+    {
+      "identity" : "launchatlogin-legacy",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sindresorhus/LaunchAtLogin-Legacy",
+      "state" : {
+        "branch" : "main",
+        "revision" : "9a894d799269cb591037f9f9cb0961510d4dca81"
+      }
+    },
+    {
+      "identity" : "sentry-cocoa",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/getsentry/sentry-cocoa",
+      "state" : {
+        "revision" : "dad229c665bfd043c5d80ac7aa77717cbd19a1c3",
+        "version" : "8.58.3"
+      }
+    }
+  ],
+  "version" : 2
+}
