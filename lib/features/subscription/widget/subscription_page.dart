@@ -1,9 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/features/xboard/model/xboard_models.dart';
-import 'package:hiddify/features/xboard/notifier/xboard_plan_notifier.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:nyro/core/localization/translations.dart';
+import 'package:nyro/features/common/qr_code_dialog.dart';
+import 'package:nyro/features/xboard/data/xboard_providers.dart';
+import 'package:nyro/features/xboard/model/xboard_models.dart';
+import 'package:nyro/features/xboard/notifier/xboard_auth_notifier.dart';
+import 'package:nyro/features/xboard/notifier/xboard_plan_notifier.dart';
+import 'package:nyro/utils/utils.dart';
 
 class SubscriptionPage extends ConsumerWidget {
   const SubscriptionPage({super.key});
@@ -86,8 +92,23 @@ class _PlanOfferTile extends ConsumerWidget {
     final t = ref.watch(translationsProvider).requireValue;
     final theme = Theme.of(context);
     final primaryPrice = plan.primaryPrice;
+    final account = ref.watch(xboardAuthNotifierProvider).valueOrNull;
+    final isLoggedIn = account != null;
+    final isCurrentPlan = account?.plan?.id == plan.id;
+
+    void startPurchase(XboardPlanPrice price) {
+      if (!isLoggedIn) {
+        CustomToast.error(t.pages.subscription.loginRequired).show(context);
+        return;
+      }
+      showDialog<void>(
+        context: context,
+        builder: (_) => _PurchaseDialog(plan: plan, price: price),
+      );
+    }
 
     return _SurfacePanel(
+      highlighted: isCurrentPlan,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -108,6 +129,10 @@ class _PlanOfferTile extends ConsumerWidget {
                             style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                           ),
                         ),
+                        if (isCurrentPlan) ...[
+                          const Gap(8),
+                          _CurrentPlanBadge(label: t.pages.subscription.currentPlan),
+                        ],
                         if (!plan.sell) ...[const Gap(8), _StatusBadge(label: t.pages.subscription.notForSale)],
                       ],
                     ),
@@ -175,7 +200,12 @@ class _PlanOfferTile extends ConsumerWidget {
               runSpacing: 8,
               children: [
                 for (final price in plan.prices)
-                  _PricePill(label: _periodLabel(t, price.period), price: _formatPrice(price.cents)),
+                  _PricePill(
+                    label: _periodLabel(t, price.period),
+                    price: _formatPrice(price.cents),
+                    enabled: plan.sell,
+                    onPressed: () => startPurchase(price),
+                  ),
               ],
             ),
         ],
@@ -217,29 +247,249 @@ class _MetricPill extends StatelessWidget {
 }
 
 class _PricePill extends StatelessWidget {
-  const _PricePill({required this.label, required this.price});
+  const _PricePill({required this.label, required this.price, required this.enabled, required this.onPressed});
 
   final String label;
   final String price;
+  final bool enabled;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(color: scheme.primaryContainer, borderRadius: BorderRadius.circular(6)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(label, style: theme.textTheme.labelMedium?.copyWith(color: scheme.onPrimaryContainer)),
-          const Gap(8),
-          Text(
-            price,
-            style: theme.textTheme.labelMedium?.copyWith(color: scheme.onPrimaryContainer, fontWeight: FontWeight.w700),
+    final foreground = enabled ? scheme.onPrimaryContainer : scheme.onSurfaceVariant;
+    final background = enabled ? scheme.primaryContainer : scheme.surfaceContainerHighest;
+    return Material(
+      color: background,
+      borderRadius: BorderRadius.circular(6),
+      child: InkWell(
+        onTap: enabled ? onPressed : null,
+        borderRadius: BorderRadius.circular(6),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(label, style: theme.textTheme.labelMedium?.copyWith(color: foreground)),
+              const Gap(8),
+              Text(
+                price,
+                style: theme.textTheme.labelMedium?.copyWith(color: foreground, fontWeight: FontWeight.w700),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
+    );
+  }
+}
+
+class _PurchaseDialog extends ConsumerStatefulWidget {
+  const _PurchaseDialog({required this.plan, required this.price});
+
+  final XboardPlanOffer plan;
+  final XboardPlanPrice price;
+
+  @override
+  ConsumerState<_PurchaseDialog> createState() => _PurchaseDialogState();
+}
+
+class _PurchaseDialogState extends ConsumerState<_PurchaseDialog> {
+  late final Future<List<XboardPaymentMethod>> _paymentMethodsFuture;
+  int? _selectedMethodId;
+  bool _checkingOut = false;
+  bool _waitingPayment = false;
+  bool _qrDialogOpen = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final authData = ref.read(xboardAuthNotifierProvider).valueOrNull?.authData ?? '';
+    _paymentMethodsFuture = ref.read(xboardApiClientProvider).getPaymentMethods(authData).then((methods) {
+      if (methods.isNotEmpty && mounted) {
+        setState(() => _selectedMethodId = methods.first.id);
+      }
+      return methods;
+    });
+  }
+
+  Future<void> _checkout() async {
+    if (_checkingOut || _selectedMethodId == null) return;
+    setState(() {
+      _checkingOut = true;
+      _waitingPayment = false;
+      _error = null;
+    });
+    try {
+      final client = ref.read(xboardApiClientProvider);
+      final authData = ref.read(xboardAuthNotifierProvider).valueOrNull?.authData;
+      if (authData == null || authData.isEmpty) throw XboardApiException('Missing authorization token');
+      final tradeNo = await client.createOrder(authData: authData, planId: widget.plan.id, period: widget.price.period);
+      final checkout = await client.checkoutOrder(authData: authData, tradeNo: tradeNo, methodId: _selectedMethodId!);
+      if (!mounted) return;
+
+      if (checkout.isPaidWithoutRedirect) {
+        await _completePayment();
+        return;
+      }
+
+      final handled = await _handleCheckoutResult(checkout);
+      if (!handled) {
+        throw XboardApiException(ref.read(translationsProvider).requireValue.pages.subscription.paymentOpenFailed);
+      }
+      if (!mounted) return;
+      setState(() {
+        _checkingOut = false;
+        _waitingPayment = true;
+      });
+      await _pollOrderStatus(tradeNo);
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _error = error.toString();
+          _checkingOut = false;
+          _waitingPayment = false;
+        });
+      }
+    }
+  }
+
+  Future<bool> _handleCheckoutResult(XboardOrderCheckout checkout) async {
+    final t = ref.read(translationsProvider).requireValue;
+    final paymentUrl = checkout.paymentUrl;
+    if (paymentUrl != null) {
+      final launched = await UriUtils.tryLaunch(Uri.parse(paymentUrl));
+      if (launched && mounted) CustomToast.success(t.pages.subscription.paymentPageOpened).show(context);
+      return launched;
+    }
+
+    final qrContent = checkout.qrContent;
+    if (qrContent != null && mounted) {
+      _qrDialogOpen = true;
+      unawaited(
+        showDialog<void>(
+          context: context,
+          builder: (_) => Dialog(child: QrCodeDialog(qrContent, message: t.pages.subscription.scanToPay)),
+        ).whenComplete(() {
+          _qrDialogOpen = false;
+        }),
+      );
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> _pollOrderStatus(String tradeNo) async {
+    final client = ref.read(xboardApiClientProvider);
+    for (var i = 0; i < 90; i++) {
+      await Future<void>.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
+      final authData = ref.read(xboardAuthNotifierProvider).valueOrNull?.authData;
+      if (authData == null || authData.isEmpty) throw XboardApiException('Missing authorization token');
+      final status = await client.checkOrder(authData: authData, tradeNo: tradeNo);
+      if (status == XboardOrderStatus.completed || status == XboardOrderStatus.discounted) {
+        await _completePayment();
+        return;
+      }
+      if (status == XboardOrderStatus.canceled) {
+        throw XboardApiException(ref.read(translationsProvider).requireValue.pages.subscription.paymentCanceled);
+      }
+    }
+    throw XboardApiException(ref.read(translationsProvider).requireValue.pages.subscription.paymentPending);
+  }
+
+  Future<void> _completePayment() async {
+    await ref.read(xboardAuthNotifierProvider.notifier).refresh();
+    ref.invalidate(xboardPlanOffersProvider);
+    if (!mounted) return;
+    final t = ref.read(translationsProvider).requireValue;
+    if (_qrDialogOpen) {
+      Navigator.of(context, rootNavigator: true).pop();
+      _qrDialogOpen = false;
+    }
+    Navigator.of(context).pop();
+    CustomToast.success(t.pages.subscription.paymentSuccess).show(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = ref.watch(translationsProvider).requireValue;
+    final theme = Theme.of(context);
+
+    return AlertDialog(
+      title: Text(t.pages.subscription.confirmPurchase),
+      content: SizedBox(
+        width: 420,
+        child: FutureBuilder<List<XboardPaymentMethod>>(
+          future: _paymentMethodsFuture,
+          builder: (context, snapshot) {
+            final methods = snapshot.data ?? const <XboardPaymentMethod>[];
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(widget.plan.name, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                const Gap(6),
+                Text(
+                  '${_periodLabel(t, widget.price.period)} · ${_formatPrice(widget.price.cents)}',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+                const Gap(18),
+                if (snapshot.connectionState == ConnectionState.waiting)
+                  const Center(child: CircularProgressIndicator())
+                else if (snapshot.hasError)
+                  Text(
+                    snapshot.error.toString(),
+                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error),
+                  )
+                else if (methods.isEmpty)
+                  Text(t.pages.subscription.noPaymentMethods)
+                else
+                  DropdownButtonFormField<int>(
+                    initialValue: _selectedMethodId,
+                    decoration: InputDecoration(
+                      labelText: t.pages.subscription.paymentMethod,
+                      prefixIcon: const Icon(Icons.payments_rounded),
+                    ),
+                    items: [
+                      for (final method in methods)
+                        DropdownMenuItem(
+                          value: method.id,
+                          child: Text(method.name.isEmpty ? method.payment : method.name),
+                        ),
+                    ],
+                    onChanged: _checkingOut ? null : (value) => setState(() => _selectedMethodId = value),
+                  ),
+                if (_error != null) ...[
+                  const Gap(12),
+                  Text(_error!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+                ],
+              ],
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _checkingOut || _waitingPayment ? null : () => Navigator.of(context).pop(),
+          child: Text(t.common.cancel),
+        ),
+        FilledButton.icon(
+          onPressed: _checkingOut || _waitingPayment || _selectedMethodId == null ? null : _checkout,
+          icon: _checkingOut || _waitingPayment
+              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.shopping_cart_checkout_rounded),
+          label: Text(
+            _waitingPayment
+                ? t.pages.subscription.waitingPayment
+                : _checkingOut
+                ? t.pages.subscription.checkingOut
+                : t.pages.subscription.checkout,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -256,6 +506,22 @@ class _StatusBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(color: scheme.errorContainer, borderRadius: BorderRadius.circular(4)),
       child: Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scheme.onErrorContainer)),
+    );
+  }
+}
+
+class _CurrentPlanBadge extends StatelessWidget {
+  const _CurrentPlanBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: scheme.primaryContainer, borderRadius: BorderRadius.circular(4)),
+      child: Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scheme.onPrimaryContainer)),
     );
   }
 }
@@ -330,18 +596,19 @@ class _LoadError extends ConsumerWidget {
 }
 
 class _SurfacePanel extends StatelessWidget {
-  const _SurfacePanel({required this.child});
+  const _SurfacePanel({required this.child, this.highlighted = false});
 
   final Widget child;
+  final bool highlighted;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
+        color: highlighted ? scheme.primaryContainer.withValues(alpha: 0.16) : scheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: scheme.outlineVariant),
+        border: Border.all(color: highlighted ? scheme.primary : scheme.outlineVariant, width: highlighted ? 1.5 : 1),
       ),
       child: Padding(padding: const EdgeInsets.all(18), child: child),
     );

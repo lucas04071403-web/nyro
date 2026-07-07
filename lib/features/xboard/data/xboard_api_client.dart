@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:hiddify/features/xboard/model/xboard_models.dart';
-import 'package:hiddify/utils/custom_loggers.dart';
+import 'package:nyro/features/xboard/model/xboard_models.dart';
+import 'package:nyro/utils/custom_loggers.dart';
 
 class XboardApiClient with InfraLogger {
   XboardApiClient({required String userAgent})
@@ -19,6 +19,12 @@ class XboardApiClient with InfraLogger {
   static const baseUrl = 'https://luck.nyro.lol';
   final Dio _dio;
 
+  Future<XboardRegisterConfig> getRegisterConfig() async {
+    final data = await _get('/api/v1/guest/comm/config');
+    if (data is! Map) throw XboardApiException('Invalid register config response');
+    return XboardRegisterConfig.fromJson(data.cast<String, dynamic>());
+  }
+
   Future<XboardAuthData> login({required String email, required String password}) async {
     final data = await _post('/api/v1/passport/auth/login', data: {'email': email, 'password': password});
     if (data is! Map) throw XboardApiException('Invalid login response');
@@ -27,15 +33,44 @@ class XboardApiClient with InfraLogger {
     return auth;
   }
 
+  Future<void> sendEmailVerify({required String email}) async {
+    await _post('/api/v1/passport/comm/sendEmailVerify', data: {'email': email.trim()});
+  }
+
+  Future<XboardAuthData> register({
+    required String email,
+    required String password,
+    required String emailCode,
+    String? inviteCode,
+  }) async {
+    final payload = <String, dynamic>{'email': email.trim(), 'password': password, 'email_code': emailCode.trim()};
+    final invite = inviteCode?.trim();
+    if (invite != null && invite.isNotEmpty) payload['invite_code'] = invite;
+
+    final data = await _post('/api/v1/passport/auth/register', data: payload);
+    if (data == null) return const XboardAuthData(authData: '', subscribeToken: '', isAdmin: false);
+    if (data is! Map) throw XboardApiException('Invalid register response');
+    return XboardAuthData.fromJson(data.cast<String, dynamic>());
+  }
+
   Future<XboardAccount> getAccount(String authData) async {
     final info = await _get('/api/v1/user/info', authData: authData);
-    final subscribe = await _get('/api/v1/user/getSubscribe', authData: authData);
-    if (info is! Map || subscribe is! Map) throw XboardApiException('Invalid account response');
-    return XboardAccount.fromResponses(
-      authData: authData,
-      info: info.cast<String, dynamic>(),
-      subscribe: subscribe.cast<String, dynamic>(),
-    );
+    if (info is! Map) throw XboardApiException('Invalid account response');
+
+    Map<String, dynamic> subscribe = const {};
+    try {
+      final data = await _get('/api/v1/user/getSubscribe', authData: authData);
+      if (data is Map) {
+        subscribe = data.cast<String, dynamic>();
+      } else {
+        loggy.warning('Xboard subscribe response is empty or invalid, continuing without subscription');
+      }
+    } on XboardApiException catch (error, stackTrace) {
+      if (error.isUnauthorized) rethrow;
+      loggy.warning('Xboard subscribe response unavailable, continuing without subscription', error, stackTrace);
+    }
+
+    return XboardAccount.fromResponses(authData: authData, info: info.cast<String, dynamic>(), subscribe: subscribe);
   }
 
   Future<List<XboardPlanOffer>> getPlanOffers({String? authData}) async {
@@ -52,6 +87,59 @@ class XboardApiClient with InfraLogger {
             .toList()
           ..sort((a, b) => a.sort.compareTo(b.sort));
     return plans;
+  }
+
+  Future<List<XboardPaymentMethod>> getPaymentMethods(String authData) async {
+    final data = await _get('/api/v1/user/order/getPaymentMethod', authData: authData);
+    if (data is! List) throw XboardApiException('Invalid payment methods response');
+    return data
+        .whereType<Map>()
+        .map((method) => XboardPaymentMethod.fromJson(method.cast<String, dynamic>()))
+        .where((method) => method.id > 0)
+        .toList();
+  }
+
+  Future<String> createOrder({
+    required String authData,
+    required int planId,
+    required XboardPlanPricePeriod period,
+    String? couponCode,
+  }) async {
+    final payload = <String, dynamic>{'plan_id': planId, 'period': period.apiKey};
+    final coupon = couponCode?.trim();
+    if (coupon != null && coupon.isNotEmpty) payload['coupon_code'] = coupon;
+
+    final data = await _post('/api/v1/user/order/save', data: payload, authData: authData);
+    final tradeNo = data?.toString() ?? '';
+    if (tradeNo.isEmpty) throw XboardApiException('Invalid order response');
+    return tradeNo;
+  }
+
+  Future<XboardOrderCheckout> checkoutOrder({
+    required String authData,
+    required String tradeNo,
+    required int methodId,
+  }) async {
+    final data = await _postRaw(
+      '/api/v1/user/order/checkout',
+      data: {'trade_no': tradeNo, 'method': methodId},
+      authData: authData,
+    );
+    if (data is! Map) throw XboardApiException('Invalid checkout response');
+    return XboardOrderCheckout.fromJson(tradeNo: tradeNo, json: data.cast<String, dynamic>());
+  }
+
+  Future<int> checkOrder({required String authData, required String tradeNo}) async {
+    final data = await _get(
+      '/api/v1/user/order/check?trade_no=${Uri.encodeQueryComponent(tradeNo)}',
+      authData: authData,
+    );
+    return switch (data) {
+      final int status => status,
+      final double status => status.round(),
+      final String status => int.tryParse(status) ?? -1,
+      _ => -1,
+    };
   }
 
   Future<String> getSubscriptionContent(String subscribeUrl) async {
@@ -87,22 +175,36 @@ class XboardApiClient with InfraLogger {
     }
   }
 
+  Future<Object?> _postRaw(String path, {Object? data, String? authData}) async {
+    try {
+      final response = await _dio.post(path, data: data, options: _options(authData));
+      return _decode(response.data);
+    } on DioException catch (error, stackTrace) {
+      loggy.warning('Xboard POST failed: $path', error, stackTrace);
+      throw _exceptionFromError(error);
+    }
+  }
+
   Options? _options(String? authData) {
     if (authData == null || authData.isEmpty) return null;
     return Options(headers: {'Authorization': authData});
   }
 
   Object? _unwrap(Object? raw) {
-    final body = switch (raw) {
-      final String text => jsonDecode(text) as Object?,
-      _ => raw,
-    };
+    final body = _decode(raw);
     if (body is! Map) return body;
 
     final json = body.cast<String, dynamic>();
     final status = json['status'];
     if (status == 'success') return json['data'];
     throw XboardApiException(json['message']?.toString() ?? 'Xboard request failed');
+  }
+
+  Object? _decode(Object? raw) {
+    return switch (raw) {
+      final String text => jsonDecode(text) as Object?,
+      _ => raw,
+    };
   }
 
   XboardApiException _exceptionFromError(DioException error) {

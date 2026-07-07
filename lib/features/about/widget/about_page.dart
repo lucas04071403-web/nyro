@@ -2,16 +2,17 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
-import 'package:hiddify/core/app_info/app_info_provider.dart';
-import 'package:hiddify/core/directories/directories_provider.dart';
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/model/failures.dart';
-import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
-import 'package:hiddify/core/widget/adaptive_icon.dart';
-import 'package:hiddify/features/app_update/notifier/app_update_notifier.dart';
-import 'package:hiddify/features/app_update/notifier/app_update_state.dart';
-import 'package:hiddify/gen/assets.gen.dart';
-import 'package:hiddify/utils/utils.dart';
+import 'package:nyro/core/app_info/app_info_provider.dart';
+import 'package:nyro/core/directories/directories_provider.dart';
+import 'package:nyro/core/localization/translations.dart';
+import 'package:nyro/core/model/constants.dart';
+import 'package:nyro/core/model/failures.dart';
+import 'package:nyro/core/router/dialog/dialog_notifier.dart';
+import 'package:nyro/core/widget/adaptive_icon.dart';
+import 'package:nyro/features/app_update/notifier/app_update_notifier.dart';
+import 'package:nyro/features/app_update/notifier/app_update_state.dart';
+import 'package:nyro/gen/assets.gen.dart';
+import 'package:nyro/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class AboutPage extends HookConsumerWidget {
@@ -109,7 +110,7 @@ class AboutPage extends HookConsumerWidget {
                 title: const Text('官网'),
                 trailing: const Icon(FluentIcons.open_24_regular),
                 onTap: () async {
-                  await UriUtils.tryLaunch(Uri.parse('https://nyro.lol'));
+                  await UriUtils.tryLaunch(Uri.parse(Constants.githubUrl));
                 },
               ),
             ]),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hiddify/core/model/constants.dart';
-import 'package:hiddify/gen/translations.g.dart';
-import 'package:hiddify/singbox/model/singbox_config_enum.dart';
+import 'package:nyro/core/model/constants.dart';
+import 'package:nyro/gen/translations.g.dart';
+import 'package:nyro/singbox/model/singbox_config_enum.dart';
 
 // UI helper
 enum ChainType {

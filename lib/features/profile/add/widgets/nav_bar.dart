@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/model/constants.dart';
-import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
-import 'package:hiddify/features/profile/notifier/profile_notifier.dart';
+import 'package:nyro/core/localization/translations.dart';
+import 'package:nyro/core/model/constants.dart';
+import 'package:nyro/core/router/dialog/dialog_notifier.dart';
+import 'package:nyro/features/profile/notifier/profile_notifier.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class NavBar extends ConsumerWidget {

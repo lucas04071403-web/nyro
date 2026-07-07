@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:hiddify/utils/utils.dart';
+import 'package:nyro/utils/utils.dart';
 
 abstract class Constants {
   static const appName = "Nyro";
-  static const githubUrl = "https://nyro.lol";
-  static const licenseUrl = "https://nyro.lol";
-  static const githubReleasesApiUrl = "https://api.github.com/repos/nyro/nyro/releases";
-  static const githubLatestReleaseUrl = "https://nyro.lol";
-  static const appCastUrl = "https://nyro.lol/appcast.xml";
+  static const githubUrl = "https://github.com/lucas04071403-web/nyro";
+  static const licenseUrl = "https://github.com/lucas04071403-web/nyro/blob/main/LICENSE.md";
+  static const githubReleasesApiUrl = "https://api.github.com/repos/lucas04071403-web/nyro/releases";
+  static const githubLatestReleaseUrl = "https://github.com/lucas04071403-web/nyro/releases/latest";
+  static const appCastUrl = "https://raw.githubusercontent.com/lucas04071403-web/nyro/main/appcast.xml";
   static const telegramChannelUrl = "https://nyro.lol";
   static const privacyPolicyUrl = "https://nyro.lol/privacy-policy/";
   static const termsAndConditionsUrl = "https://nyro.lol/terms/";

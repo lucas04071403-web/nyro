@@ -1,6 +1,6 @@
 display_name: Nyro
 publisher_display_name: Nyro
-identity_name: Nyro.NyroNext
+identity_name: Nyro.Nyro
 msix_version: 1.0.0.0
 logo_path: windows\runner\resources\app_icon.ico
 capabilities: internetClient, internetClientServer, privateNetworkClientServer

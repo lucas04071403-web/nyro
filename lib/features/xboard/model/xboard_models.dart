@@ -10,6 +10,41 @@ class XboardApiException implements Exception {
   String toString() => message;
 }
 
+class XboardRegisterConfig {
+  const XboardRegisterConfig({
+    required this.isEmailVerify,
+    required this.isInviteForce,
+    required this.isCaptcha,
+    required this.captchaType,
+    required this.recaptchaSiteKey,
+    required this.recaptchaV3SiteKey,
+    required this.turnstileSiteKey,
+    required this.tosUrl,
+  });
+
+  factory XboardRegisterConfig.fromJson(Map<String, dynamic> json) {
+    return XboardRegisterConfig(
+      isEmailVerify: _asBool(json['is_email_verify']),
+      isInviteForce: _asBool(json['is_invite_force']),
+      isCaptcha: _asBool(json['is_captcha'] ?? json['is_recaptcha']),
+      captchaType: json['captcha_type'] as String? ?? '',
+      recaptchaSiteKey: _asNullableString(json['recaptcha_site_key']),
+      recaptchaV3SiteKey: _asNullableString(json['recaptcha_v3_site_key']),
+      turnstileSiteKey: _asNullableString(json['turnstile_site_key']),
+      tosUrl: _asNullableString(json['tos_url']),
+    );
+  }
+
+  final bool isEmailVerify;
+  final bool isInviteForce;
+  final bool isCaptcha;
+  final String captchaType;
+  final String? recaptchaSiteKey;
+  final String? recaptchaV3SiteKey;
+  final String? turnstileSiteKey;
+  final String? tosUrl;
+}
+
 class XboardAuthData {
   const XboardAuthData({required this.authData, required this.subscribeToken, required this.isAdmin});
 
@@ -39,11 +74,91 @@ class XboardPlan {
 
 enum XboardPlanPricePeriod { month, quarter, halfYear, year, twoYear, threeYear, onetime, reset }
 
+extension XboardPlanPricePeriodX on XboardPlanPricePeriod {
+  String get apiKey {
+    return switch (this) {
+      XboardPlanPricePeriod.month => 'month_price',
+      XboardPlanPricePeriod.quarter => 'quarter_price',
+      XboardPlanPricePeriod.halfYear => 'half_year_price',
+      XboardPlanPricePeriod.year => 'year_price',
+      XboardPlanPricePeriod.twoYear => 'two_year_price',
+      XboardPlanPricePeriod.threeYear => 'three_year_price',
+      XboardPlanPricePeriod.onetime => 'onetime_price',
+      XboardPlanPricePeriod.reset => 'reset_price',
+    };
+  }
+}
+
 class XboardPlanPrice {
   const XboardPlanPrice({required this.period, required this.cents});
 
   final XboardPlanPricePeriod period;
   final int cents;
+}
+
+class XboardPaymentMethod {
+  const XboardPaymentMethod({
+    required this.id,
+    required this.name,
+    required this.payment,
+    required this.icon,
+    required this.handlingFeeFixed,
+    required this.handlingFeePercent,
+  });
+
+  factory XboardPaymentMethod.fromJson(Map<String, dynamic> json) {
+    return XboardPaymentMethod(
+      id: _asInt(json['id']),
+      name: json['name'] as String? ?? '',
+      payment: json['payment'] as String? ?? '',
+      icon: json['icon'] as String? ?? '',
+      handlingFeeFixed: _asInt(json['handling_fee_fixed']),
+      handlingFeePercent: _asDouble(json['handling_fee_percent']),
+    );
+  }
+
+  final int id;
+  final String name;
+  final String payment;
+  final String icon;
+  final int handlingFeeFixed;
+  final double handlingFeePercent;
+}
+
+class XboardOrderCheckout {
+  const XboardOrderCheckout({required this.tradeNo, required this.type, required this.data});
+
+  factory XboardOrderCheckout.fromJson({required String tradeNo, required Map<String, dynamic> json}) {
+    return XboardOrderCheckout(tradeNo: tradeNo, type: _asInt(json['type']), data: json['data']);
+  }
+
+  final String tradeNo;
+  final int type;
+  final Object? data;
+
+  bool get isPaidWithoutRedirect => type == -1 && data == true;
+
+  String? get paymentUrl {
+    final text = _firstString(data, const ['url', 'pay_url', 'payment_url', 'redirect_url', 'checkout_url']);
+    if (text == null) return null;
+    final uri = Uri.tryParse(text);
+    if (uri == null || !uri.hasScheme || (uri.scheme != 'http' && uri.scheme != 'https')) return null;
+    return text;
+  }
+
+  String? get qrContent {
+    final text = _firstString(data, const ['qrcode', 'qr_code', 'code_url', 'codeUrl', 'content']);
+    if (text == null || text.isEmpty || text == paymentUrl) return null;
+    return text;
+  }
+}
+
+abstract class XboardOrderStatus {
+  static const pending = 0;
+  static const processing = 1;
+  static const canceled = 2;
+  static const completed = 3;
+  static const discounted = 4;
 }
 
 class XboardPlanOffer {
@@ -170,6 +285,15 @@ int _asInt(Object? value) {
   };
 }
 
+double _asDouble(Object? value) {
+  return switch (value) {
+    final int v => v.toDouble(),
+    final double v => v,
+    final String v => double.tryParse(v) ?? 0,
+    _ => 0,
+  };
+}
+
 int? _asNullableInt(Object? value) {
   if (value == null) return null;
   return _asInt(value);
@@ -190,4 +314,34 @@ DateTime? _dateFromUnixSeconds(Object? value) {
   final seconds = _asInt(value);
   if (seconds <= 0) return null;
   return DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
+}
+
+bool _asBool(Object? value) {
+  return switch (value) {
+    final bool v => v,
+    final int v => v != 0,
+    final double v => v != 0,
+    final String v => {'1', 'true', 'yes', 'on'}.contains(v.trim().toLowerCase()),
+    _ => false,
+  };
+}
+
+String? _asNullableString(Object? value) {
+  final text = value?.toString().trim();
+  return text == null || text.isEmpty ? null : text;
+}
+
+String? _firstString(Object? data, List<String> mapKeys) {
+  if (data is String) {
+    final text = data.trim();
+    return text.isEmpty ? null : text;
+  }
+  if (data is Map) {
+    final json = data.cast<dynamic, dynamic>();
+    for (final key in mapKeys) {
+      final text = json[key]?.toString().trim();
+      if (text != null && text.isNotEmpty) return text;
+    }
+  }
+  return null;
 }

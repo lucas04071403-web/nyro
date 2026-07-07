@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/notification/in_app_notification_controller.dart';
-import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
-import 'package:hiddify/features/settings/data/config_option_repository.dart';
-import 'package:hiddify/hiddifycore/hiddify_core_service_provider.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:nyro/core/localization/translations.dart';
+import 'package:nyro/core/notification/in_app_notification_controller.dart';
+import 'package:nyro/core/router/dialog/dialog_notifier.dart';
+import 'package:nyro/features/settings/data/config_option_repository.dart';
+import 'package:nyro/hiddifycore/hiddify_core_service_provider.dart';
 
 class LanSharingPreferenceWidget extends HookConsumerWidget {
   const LanSharingPreferenceWidget({super.key});
@@ -28,7 +28,7 @@ class LanSharingPreferenceWidget extends HookConsumerWidget {
       if (password.isEmpty) {
         return 'socks://$ip:$port';
       } else {
-        return 'socks://hiddify:$password@$ip:$port';
+        return 'socks://nyro:$password@$ip:$port';
       }
     }
 

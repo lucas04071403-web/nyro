@@ -8,6 +8,10 @@
 
 下面按系统选择安装包。完整文件列表也可以在本页底部的 **Assets** 中下载。
 
+Nyro is based on Hiddify App and powered by Hiddify Core and Sing-box. License
+and attribution details are included in `LICENSE.md`, `NOTICE.md`, and
+`ACKNOWLEDGEMENTS.md`.
+
 <table>
   <thead>
     <tr>

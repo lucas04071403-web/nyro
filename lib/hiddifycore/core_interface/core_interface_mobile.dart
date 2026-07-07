@@ -4,16 +4,16 @@ import 'dart:io';
 import 'package:basic_utils/basic_utils.dart';
 import 'package:flutter/services.dart';
 import 'package:grpc/grpc.dart';
-import 'package:hiddify/core/model/directories.dart';
-import 'package:hiddify/core/utils/laststeam.dart';
-import 'package:hiddify/hiddifycore/core_interface/core_interface.dart';
-import 'package:hiddify/hiddifycore/core_interface/mtls_channel_cred.dart';
-import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore_service.pbgrpc.dart';
-import 'package:hiddify/hiddifycore/generated/v2/hello/hello.pb.dart';
-import 'package:hiddify/hiddifycore/generated/v2/hello/hello_service.pbgrpc.dart';
-import 'package:hiddify/singbox/model/core_status.dart';
+import 'package:nyro/core/model/directories.dart';
+import 'package:nyro/core/utils/laststeam.dart';
+import 'package:nyro/hiddifycore/core_interface/core_interface.dart';
+import 'package:nyro/hiddifycore/core_interface/mtls_channel_cred.dart';
+import 'package:nyro/hiddifycore/generated/v2/hcore/hcore_service.pbgrpc.dart';
+import 'package:nyro/hiddifycore/generated/v2/hello/hello.pb.dart';
+import 'package:nyro/hiddifycore/generated/v2/hello/hello_service.pbgrpc.dart';
+import 'package:nyro/singbox/model/core_status.dart';
 
-import 'package:hiddify/utils/utils.dart';
+import 'package:nyro/utils/utils.dart';
 import 'package:loggy/loggy.dart';
 import 'package:rxdart/rxdart.dart';
 

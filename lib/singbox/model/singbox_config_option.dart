@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:hiddify/core/model/optional_range.dart';
-import 'package:hiddify/core/utils/json_converters.dart';
-import 'package:hiddify/features/log/model/log_level.dart';
-import 'package:hiddify/singbox/model/singbox_config_enum.dart';
+import 'package:nyro/core/model/optional_range.dart';
+import 'package:nyro/core/utils/json_converters.dart';
+import 'package:nyro/features/log/model/log_level.dart';
+import 'package:nyro/singbox/model/singbox_config_enum.dart';
 
 part 'singbox_config_option.freezed.dart';
 part 'singbox_config_option.g.dart';

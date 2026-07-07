@@ -4,15 +4,15 @@ import 'dart:math';
 
 import 'package:ffi/ffi.dart';
 import 'package:grpc/grpc.dart';
-import 'package:hiddify/core/model/directories.dart';
-import 'package:hiddify/gen/hiddify_core_generated_bindings.dart';
-import 'package:hiddify/hiddifycore/core_interface/core_interface.dart';
-import 'package:hiddify/hiddifycore/core_interface/mtls_channel_cred.dart';
-import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore.pb.dart';
-import 'package:hiddify/hiddifycore/generated/v2/hcore/hcore_service.pbgrpc.dart';
-import 'package:hiddify/hiddifycore/generated/v2/hello/hello.pb.dart';
-import 'package:hiddify/hiddifycore/generated/v2/hello/hello_service.pbgrpc.dart';
-import 'package:hiddify/utils/custom_loggers.dart';
+import 'package:nyro/core/model/directories.dart';
+import 'package:nyro/gen/hiddify_core_generated_bindings.dart';
+import 'package:nyro/hiddifycore/core_interface/core_interface.dart';
+import 'package:nyro/hiddifycore/core_interface/mtls_channel_cred.dart';
+import 'package:nyro/hiddifycore/generated/v2/hcore/hcore.pb.dart';
+import 'package:nyro/hiddifycore/generated/v2/hcore/hcore_service.pbgrpc.dart';
+import 'package:nyro/hiddifycore/generated/v2/hello/hello.pb.dart';
+import 'package:nyro/hiddifycore/generated/v2/hello/hello_service.pbgrpc.dart';
+import 'package:nyro/utils/custom_loggers.dart';
 
 import 'package:loggy/loggy.dart';
 

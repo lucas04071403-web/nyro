@@ -4,10 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/model/constants.dart';
-import 'package:hiddify/singbox/model/singbox_config_enum.dart';
-import 'package:hiddify/utils/uri_utils.dart';
+import 'package:nyro/core/localization/translations.dart';
+import 'package:nyro/core/model/constants.dart';
+import 'package:nyro/singbox/model/singbox_config_enum.dart';
+import 'package:nyro/utils/uri_utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class ChainLicenseDialog extends HookConsumerWidget {

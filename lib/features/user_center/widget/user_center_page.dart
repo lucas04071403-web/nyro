@@ -1,11 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/features/xboard/model/xboard_models.dart';
-import 'package:hiddify/features/xboard/notifier/xboard_auth_notifier.dart';
-import 'package:hiddify/utils/utils.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:nyro/core/localization/translations.dart';
+import 'package:nyro/features/xboard/data/xboard_providers.dart';
+import 'package:nyro/features/xboard/model/xboard_models.dart';
+import 'package:nyro/features/xboard/notifier/xboard_auth_notifier.dart';
+import 'package:nyro/utils/utils.dart';
 
 class UserCenterPage extends HookConsumerWidget {
   const UserCenterPage({super.key});
@@ -36,7 +39,7 @@ class UserCenterPage extends HookConsumerWidget {
         ],
       ),
       body: accountState.when(
-        data: (account) => account == null ? const _LoginPanel() : _AccountPanel(account: account),
+        data: (account) => account == null ? const _AuthPanel() : _AccountPanel(account: account),
         error: (error, stackTrace) => _LoadErrorPanel(error: error),
         loading: () => const Center(child: CircularProgressIndicator()),
       ),
@@ -44,32 +47,129 @@ class UserCenterPage extends HookConsumerWidget {
   }
 }
 
-class _LoginPanel extends HookConsumerWidget {
-  const _LoginPanel();
+enum _AuthMode { login, register }
+
+const _minRegisterPasswordLength = 8;
+
+final _emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+final _emailCodeRegex = RegExp(r'^[0-9A-Za-z]{4,12}$');
+
+class _AuthPanel extends HookConsumerWidget {
+  const _AuthPanel();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
     final theme = Theme.of(context);
+    final registerConfigState = ref.watch(xboardRegisterConfigProvider);
+    final registerConfig = registerConfigState.valueOrNull;
+    final authMode = useState(_AuthMode.login);
     final formKey = useMemoized(GlobalKey<FormState>.new);
     final emailController = useTextEditingController();
     final passwordController = useTextEditingController();
+    final confirmPasswordController = useTextEditingController();
+    final emailCodeController = useTextEditingController();
+    final inviteCodeController = useTextEditingController();
     final obscurePassword = useState(true);
+    final obscureConfirmPassword = useState(true);
     final isSubmitting = useState(false);
-    final loginError = useState<String?>(null);
+    final isSendingEmailCode = useState(false);
+    final emailCodeCountdown = useState(0);
+    final authError = useState<String?>(null);
+    final isRegisterMode = authMode.value == _AuthMode.register;
+    final requiresEmailCode = registerConfig?.isEmailVerify ?? true;
+    final requiresInviteCode = registerConfig?.isInviteForce ?? false;
+    final requiresCaptcha = registerConfig?.isCaptcha ?? false;
+
+    String? validateEmail(String? value) {
+      final email = value?.trim() ?? '';
+      if (email.isEmpty) return t.pages.userCenter.emailRequired;
+      if (!_emailRegex.hasMatch(email)) return t.pages.userCenter.invalidEmail;
+      return null;
+    }
+
+    String? validatePassword(String? value) {
+      final password = value ?? '';
+      if (password.isEmpty) return t.pages.userCenter.passwordRequired;
+      if (isRegisterMode && password.length < _minRegisterPasswordLength) {
+        return t.pages.userCenter.passwordTooShort(length: _minRegisterPasswordLength);
+      }
+      return null;
+    }
+
+    String? validateEmailCode(String? value) {
+      final code = value?.trim() ?? '';
+      if (code.isEmpty) return t.pages.userCenter.emailCodeRequired;
+      if (!_emailCodeRegex.hasMatch(code)) return t.pages.userCenter.invalidEmailCode;
+      return null;
+    }
+
+    useEffect(() {
+      if (emailCodeCountdown.value <= 0) return null;
+      final timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (emailCodeCountdown.value <= 1) {
+          emailCodeCountdown.value = 0;
+        } else {
+          emailCodeCountdown.value -= 1;
+        }
+      });
+      return timer.cancel;
+    }, [emailCodeCountdown.value > 0]);
+
+    Future<void> sendEmailCode() async {
+      if (isSendingEmailCode.value || emailCodeCountdown.value > 0) return;
+      final email = emailController.text.trim();
+      final emailError = validateEmail(email);
+      if (emailError != null) {
+        authError.value = emailError;
+        return;
+      }
+      if (requiresCaptcha) {
+        authError.value = t.pages.userCenter.captchaUnsupported;
+        return;
+      }
+      FocusScope.of(context).unfocus();
+      authError.value = null;
+      isSendingEmailCode.value = true;
+      try {
+        await ref.read(xboardApiClientProvider).sendEmailVerify(email: email);
+        emailCodeCountdown.value = 60;
+        if (context.mounted) CustomToast.success(t.pages.userCenter.emailCodeSent).show(context);
+      } catch (error) {
+        if (context.mounted) authError.value = error.toString();
+      } finally {
+        if (context.mounted) isSendingEmailCode.value = false;
+      }
+    }
 
     Future<void> submit() async {
       if (isSubmitting.value || !(formKey.currentState?.validate() ?? false)) return;
+      if (isRegisterMode && requiresCaptcha) {
+        authError.value = t.pages.userCenter.captchaUnsupported;
+        return;
+      }
       FocusScope.of(context).unfocus();
-      loginError.value = null;
+      authError.value = null;
       isSubmitting.value = true;
       try {
-        await ref
-            .read(xboardAuthNotifierProvider.notifier)
-            .login(email: emailController.text.trim(), password: passwordController.text);
-        if (context.mounted) CustomToast.success(t.pages.userCenter.loginSuccess).show(context);
+        if (isRegisterMode) {
+          await ref
+              .read(xboardAuthNotifierProvider.notifier)
+              .register(
+                email: emailController.text.trim(),
+                password: passwordController.text,
+                emailCode: requiresEmailCode ? emailCodeController.text.trim() : '',
+                inviteCode: inviteCodeController.text.trim(),
+              );
+          if (context.mounted) CustomToast.success(t.pages.userCenter.registerSuccess).show(context);
+        } else {
+          await ref
+              .read(xboardAuthNotifierProvider.notifier)
+              .login(email: emailController.text.trim(), password: passwordController.text);
+          if (context.mounted) CustomToast.success(t.pages.userCenter.loginSuccess).show(context);
+        }
       } catch (error) {
-        if (context.mounted) loginError.value = error.toString();
+        if (context.mounted) authError.value = error.toString();
       } finally {
         if (context.mounted) isSubmitting.value = false;
       }
@@ -90,6 +190,28 @@ class _LoginPanel extends HookConsumerWidget {
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
+            const Gap(18),
+            SegmentedButton<_AuthMode>(
+              segments: [
+                ButtonSegment(
+                  value: _AuthMode.login,
+                  icon: const Icon(Icons.login_rounded),
+                  label: Text(t.pages.userCenter.login),
+                ),
+                ButtonSegment(
+                  value: _AuthMode.register,
+                  icon: const Icon(Icons.person_add_alt_1_rounded),
+                  label: Text(t.pages.userCenter.register),
+                ),
+              ],
+              selected: {authMode.value},
+              onSelectionChanged: isSubmitting.value
+                  ? null
+                  : (value) {
+                      authError.value = null;
+                      authMode.value = value.first;
+                    },
+            ),
             const Gap(24),
             TextFormField(
               controller: emailController,
@@ -100,14 +222,14 @@ class _LoginPanel extends HookConsumerWidget {
                 labelText: t.pages.userCenter.email,
                 prefixIcon: const Icon(Icons.email_rounded),
               ),
-              validator: (value) => (value == null || value.trim().isEmpty) ? t.pages.userCenter.emailRequired : null,
+              validator: validateEmail,
               enabled: !isSubmitting.value,
             ),
             const Gap(12),
             TextFormField(
               controller: passwordController,
               obscureText: obscurePassword.value,
-              textInputAction: TextInputAction.done,
+              textInputAction: isRegisterMode ? TextInputAction.next : TextInputAction.done,
               autofillHints: const [AutofillHints.password],
               decoration: InputDecoration(
                 labelText: t.pages.userCenter.password,
@@ -118,21 +240,112 @@ class _LoginPanel extends HookConsumerWidget {
                   icon: Icon(obscurePassword.value ? Icons.visibility_rounded : Icons.visibility_off_rounded),
                 ),
               ),
-              validator: (value) => (value == null || value.isEmpty) ? t.pages.userCenter.passwordRequired : null,
+              validator: validatePassword,
               onFieldSubmitted: (_) => submit(),
               enabled: !isSubmitting.value,
             ),
-            if (loginError.value != null) ...[
+            if (isRegisterMode) ...[
               const Gap(12),
-              Text(loginError.value!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+              TextFormField(
+                controller: confirmPasswordController,
+                obscureText: obscureConfirmPassword.value,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.newPassword],
+                decoration: InputDecoration(
+                  labelText: t.pages.userCenter.confirmPassword,
+                  prefixIcon: const Icon(Icons.lock_reset_rounded),
+                  suffixIcon: IconButton(
+                    tooltip: obscureConfirmPassword.value
+                        ? t.pages.userCenter.showPassword
+                        : t.pages.userCenter.hidePassword,
+                    onPressed: isSubmitting.value
+                        ? null
+                        : () => obscureConfirmPassword.value = !obscureConfirmPassword.value,
+                    icon: Icon(obscureConfirmPassword.value ? Icons.visibility_rounded : Icons.visibility_off_rounded),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return t.pages.userCenter.confirmPasswordRequired;
+                  if (value != passwordController.text) return t.pages.userCenter.passwordMismatch;
+                  return null;
+                },
+                enabled: !isSubmitting.value,
+              ),
+              if (requiresEmailCode) ...[
+                const Gap(12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: emailCodeController,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.done,
+                        autofillHints: const [AutofillHints.oneTimeCode],
+                        decoration: InputDecoration(
+                          labelText: t.pages.userCenter.emailCode,
+                          prefixIcon: const Icon(Icons.mark_email_read_rounded),
+                        ),
+                        validator: validateEmailCode,
+                        onFieldSubmitted: (_) => submit(),
+                        enabled: !isSubmitting.value,
+                      ),
+                    ),
+                    const Gap(8),
+                    SizedBox(
+                      height: 56,
+                      child: OutlinedButton(
+                        onPressed: isSubmitting.value || isSendingEmailCode.value || emailCodeCountdown.value > 0
+                            ? null
+                            : sendEmailCode,
+                        child: Text(
+                          isSendingEmailCode.value
+                              ? t.pages.userCenter.sendingEmailCode
+                              : emailCodeCountdown.value > 0
+                              ? t.pages.userCenter.resendEmailCode(seconds: emailCodeCountdown.value)
+                              : t.pages.userCenter.sendEmailCode,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if (requiresInviteCode) ...[
+                const Gap(12),
+                TextFormField(
+                  controller: inviteCodeController,
+                  textInputAction: TextInputAction.done,
+                  decoration: InputDecoration(
+                    labelText: t.pages.userCenter.inviteCode,
+                    prefixIcon: const Icon(Icons.card_giftcard_rounded),
+                  ),
+                  validator: (value) =>
+                      (value == null || value.trim().isEmpty) ? t.pages.userCenter.inviteCodeRequired : null,
+                  onFieldSubmitted: (_) => submit(),
+                  enabled: !isSubmitting.value,
+                ),
+              ],
+              if (registerConfigState.isLoading) ...[const Gap(12), const LinearProgressIndicator(minHeight: 2)],
+            ],
+            if (authError.value != null) ...[
+              const Gap(12),
+              Text(authError.value!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
             ],
             const Gap(20),
             FilledButton.icon(
               onPressed: isSubmitting.value ? null : submit,
               icon: isSubmitting.value
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.login_rounded),
-              label: Text(isSubmitting.value ? t.pages.userCenter.loggingIn : t.pages.userCenter.login),
+                  : Icon(isRegisterMode ? Icons.person_add_alt_1_rounded : Icons.login_rounded),
+              label: Text(
+                isRegisterMode
+                    ? isSubmitting.value
+                          ? t.pages.userCenter.registering
+                          : t.pages.userCenter.register
+                    : isSubmitting.value
+                    ? t.pages.userCenter.loggingIn
+                    : t.pages.userCenter.login,
+              ),
             ),
           ],
         ),

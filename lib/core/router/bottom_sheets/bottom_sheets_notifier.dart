@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/model/constants.dart';
-import 'package:hiddify/core/router/bottom_sheets/widgets/auto_apps_selection_modal.dart';
-import 'package:hiddify/core/router/bottom_sheets/widgets/quick_settings_modal.dart';
-import 'package:hiddify/core/router/dialog/dialog_notifier.dart';
-import 'package:hiddify/core/router/go_router/go_router_notifier.dart';
-import 'package:hiddify/features/per_app_proxy/model/per_app_proxy_mode.dart';
-import 'package:hiddify/features/profile/add/add_profile_modal.dart';
-import 'package:hiddify/features/profile/overview/profiles_modal.dart';
-import 'package:hiddify/features/route_rules/overview/predefined_rules_modal.dart';
+import 'package:nyro/core/localization/translations.dart';
+import 'package:nyro/core/model/constants.dart';
+import 'package:nyro/core/router/bottom_sheets/widgets/auto_apps_selection_modal.dart';
+import 'package:nyro/core/router/bottom_sheets/widgets/quick_settings_modal.dart';
+import 'package:nyro/core/router/dialog/dialog_notifier.dart';
+import 'package:nyro/core/router/go_router/go_router_notifier.dart';
+import 'package:nyro/features/per_app_proxy/model/per_app_proxy_mode.dart';
+import 'package:nyro/features/profile/add/add_profile_modal.dart';
+import 'package:nyro/features/profile/overview/profiles_modal.dart';
+import 'package:nyro/features/route_rules/overview/predefined_rules_modal.dart';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 

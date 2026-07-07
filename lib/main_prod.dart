@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:hiddify/bootstrap.dart';
-import 'package:hiddify/core/model/environment.dart';
+import 'package:nyro/bootstrap.dart';
+import 'package:nyro/core/model/environment.dart';
 
 Future<void> main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();

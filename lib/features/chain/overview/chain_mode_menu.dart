@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hiddify/core/localization/translations.dart';
-import 'package:hiddify/core/widget/adaptive_menu.dart';
-import 'package:hiddify/features/chain/model/chain_enum.dart';
-import 'package:hiddify/features/chain/overview/chain_mode_icon.dart';
-import 'package:hiddify/features/settings/data/config_option_repository.dart';
-import 'package:hiddify/singbox/model/singbox_config_enum.dart';
+import 'package:nyro/core/localization/translations.dart';
+import 'package:nyro/core/widget/adaptive_menu.dart';
+import 'package:nyro/features/chain/model/chain_enum.dart';
+import 'package:nyro/features/chain/overview/chain_mode_icon.dart';
+import 'package:nyro/features/settings/data/config_option_repository.dart';
+import 'package:nyro/singbox/model/singbox_config_enum.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class ChainModeMenu extends HookConsumerWidget {

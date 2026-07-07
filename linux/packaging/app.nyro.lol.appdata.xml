@@ -9,19 +9,20 @@
   <project_license>GPL-3.0-or-later</project_license>
 
   <name>Nyro</name>
-  <summary>Modern Proxy and VPN Manager for Linux</summary>
+  <summary>Modern proxy and VPN client for Linux</summary>
 
   <developer_name>Nyro</developer_name>
   <update_contact>linux@nyro.lol</update_contact>
 
   <description>
     <p>
-      Nyro is an advanced proxy and VPN client built for privacy and control. 
-      It supports multiple backend protocols including V2Ray, Xray, Clash, and Sing-box, 
+      Nyro is an advanced proxy and VPN client built for privacy and control.
+      It is based on Hiddify App and powered by Hiddify Core and Sing-box.
+      It supports multiple backend protocols including V2Ray, Xray, Clash, and Sing-box,
       providing flexibility and performance for all kinds of network configurations.
     </p>
     <p>
-      Designed with simplicity in mind, Nyro helps users connect securely and 
+      Designed with simplicity in mind, Nyro helps users connect securely and
       manage complex proxy configurations through a clean graphical interface.
     </p>
   </description>
@@ -62,16 +63,21 @@
     <mime-type>x-scheme-handler/sing-box</mime-type>
   </mime-types>
 
-  <url type="homepage">https://nyro.lol</url>
-  <url type="bugtracker">https://github.com/nyro/nyro-app/issues</url>
-  <url type="help">https://docs.nyro.lol</url>
+  <url type="homepage">https://github.com/lucas04071403-web/nyro</url>
+  <url type="bugtracker">https://github.com/lucas04071403-web/nyro/issues</url>
+  <url type="help">https://github.com/lucas04071403-web/nyro</url>
 
   <provides>
     <binary>nyro</binary>
   </provides>
 
   <releases>
-    <release version="1.0.0" date="2025-10-25">
+    <release version="1.0.1" date="2026-07-07">
+      <description>
+        <p>Add Xboard registration, plan purchase, and current plan status in subscriptions.</p>
+      </description>
+    </release>
+    <release version="1.0.0" date="2026-07-07">
       <description>
         <p>Initial Linux release of Nyro with multi-protocol support and modern UI.</p>
       </description>

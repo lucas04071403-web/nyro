@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:hiddify/core/model/environment.dart';
+import 'package:nyro/core/model/environment.dart';
 
 part 'app_info_entity.freezed.dart';
 
@@ -17,7 +17,7 @@ class AppInfoEntity with _$AppInfoEntity {
     required Environment environment,
   }) = _AppInfoEntity;
 
-  String get userAgent => "NyroNext/$version ($operatingSystem) like ClashMeta v2ray sing-box";
+  String get userAgent => "Nyro/$version ($operatingSystem) like ClashMeta v2ray sing-box";
 
   String get presentVersion => version;
 

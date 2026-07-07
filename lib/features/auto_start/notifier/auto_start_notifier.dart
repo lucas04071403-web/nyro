@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:hiddify/core/app_info/app_info_provider.dart';
-import 'package:hiddify/utils/utils.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
+import 'package:nyro/core/app_info/app_info_provider.dart';
+import 'package:nyro/utils/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'auto_start_notifier.g.dart';
@@ -19,7 +19,7 @@ class AutoStartNotifier extends _$AutoStartNotifier with InfraLogger {
     launchAtStartup.setup(
       appName: appInfo.name,
       appPath: Platform.resolvedExecutable,
-      packageName: "Hiddify.HiddifyNext",
+      packageName: "Nyro.Nyro",
     );
     final isEnabled = await launchAtStartup.isEnabled();
     loggy.info("auto start is [${isEnabled ? "Enabled" : "Disabled"}]");

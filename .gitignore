@@ -14,6 +14,11 @@
 .swiftpm/
 migrate_working_dir/
 .github/help
+!.github/help/
+!.github/help/linux/
+!.github/help/linux/Nyro_Help.desktop
+!.github/help/mac-windows/
+!.github/help/mac-windows/Nyro_Help.url
 # IntelliJ related
 *.iml
 *.ipr

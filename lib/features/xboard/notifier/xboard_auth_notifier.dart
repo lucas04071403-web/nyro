@@ -1,12 +1,12 @@
-import 'package:hiddify/core/preferences/preferences_provider.dart';
-import 'package:hiddify/features/profile/data/profile_data_providers.dart';
-import 'package:hiddify/features/profile/data/profile_parser.dart';
-import 'package:hiddify/features/profile/model/profile_entity.dart';
-import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
-import 'package:hiddify/features/xboard/data/xboard_providers.dart';
-import 'package:hiddify/features/xboard/model/xboard_models.dart';
-import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:nyro/core/preferences/preferences_provider.dart';
+import 'package:nyro/features/profile/data/profile_data_providers.dart';
+import 'package:nyro/features/profile/data/profile_parser.dart';
+import 'package:nyro/features/profile/model/profile_entity.dart';
+import 'package:nyro/features/profile/notifier/active_profile_notifier.dart';
+import 'package:nyro/features/xboard/data/xboard_providers.dart';
+import 'package:nyro/features/xboard/model/xboard_models.dart';
+import 'package:nyro/utils/custom_loggers.dart';
 
 final xboardAuthNotifierProvider = StateNotifierProvider<XboardAuthNotifier, AsyncValue<XboardAccount?>>((ref) {
   return XboardAuthNotifier(ref);
@@ -34,10 +34,29 @@ class XboardAuthNotifier extends StateNotifier<AsyncValue<XboardAccount?>> with 
   Future<void> login({required String email, required String password}) async {
     try {
       final auth = await ref.read(xboardApiClientProvider).login(email: email, password: password);
-      await ref.read(sharedPreferencesProvider).requireValue.setString(_authDataKey, auth.authData);
-      state = AsyncData(await _getAccountAndSyncProfile(auth.authData));
+      await _saveAuthAndLoadAccount(auth.authData);
     } catch (error, stackTrace) {
       loggy.warning('Xboard login failed', error, stackTrace);
+      await ref.read(sharedPreferencesProvider).requireValue.remove(_authDataKey);
+      Error.throwWithStackTrace(error, stackTrace);
+    }
+  }
+
+  Future<void> register({
+    required String email,
+    required String password,
+    required String emailCode,
+    String? inviteCode,
+  }) async {
+    try {
+      final client = ref.read(xboardApiClientProvider);
+      var auth = await client.register(email: email, password: password, emailCode: emailCode, inviteCode: inviteCode);
+      if (auth.authData.isEmpty) {
+        auth = await client.login(email: email, password: password);
+      }
+      await _saveAuthAndLoadAccount(auth.authData);
+    } catch (error, stackTrace) {
+      loggy.warning('Xboard register failed', error, stackTrace);
       await ref.read(sharedPreferencesProvider).requireValue.remove(_authDataKey);
       Error.throwWithStackTrace(error, stackTrace);
     }
@@ -104,6 +123,12 @@ class XboardAuthNotifier extends StateNotifier<AsyncValue<XboardAccount?>> with 
     final account = await ref.read(xboardApiClientProvider).getAccount(authData);
     await _syncActiveProfile(account);
     return account;
+  }
+
+  Future<void> _saveAuthAndLoadAccount(String authData) async {
+    if (authData.isEmpty) throw XboardApiException('Missing authorization token');
+    await ref.read(sharedPreferencesProvider).requireValue.setString(_authDataKey, authData);
+    state = AsyncData(await _getAccountAndSyncProfile(authData));
   }
 
   Future<bool> _syncActiveProfile(XboardAccount account) async {

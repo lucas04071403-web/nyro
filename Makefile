@@ -123,9 +123,9 @@ generate_kotlin_protos:
 		--exclude='*' \
 		hiddify-core/v2 hiddify-core/extension ./android/app/src/main/protos/
 	# # Find .proto files and update package declarations
-	# find "./android/app/src/main/java/com/hiddify/hiddify/protos" -type f -name "*.java" | while read -r proto_file; do \
+	# find "./android/app/src/main/java/app/nyro/lol/protos" -type f -name "*.java" | while read -r proto_file; do \
 	#     if grep -q "^package " "$$proto_file"; then \
-	#         $(SED) 's/^package \([\w\.]*\)/package com.hiddify.hiddify.protos.\1/g' "$$proto_file"; \
+	#         $(SED) 's/^package \([\w\.]*\)/package app.nyro.lol.protos.\1/g' "$$proto_file"; \
 	#     fi \
 	# done
 
