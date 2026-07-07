@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 1.0.0 (2026-07-07)
+
+#### New
+
+* Initial Nyro release.
+
+
 ## 4.1.2 (2026-03-05)
 
 #### New
@@ -5956,6 +5963,5 @@ from version 3.32.5 to 3.35.4 and resolve version solving failures._
 * Initial commit. 
 
 * Initial. 
-
 
 

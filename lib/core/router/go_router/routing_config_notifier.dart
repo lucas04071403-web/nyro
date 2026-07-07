@@ -27,6 +27,8 @@ import 'package:hiddify/features/settings/overview/sections/inbound_options_page
 import 'package:hiddify/features/settings/overview/sections/routing_options_page.dart';
 import 'package:hiddify/features/settings/overview/sections/tls_tricks_page.dart';
 import 'package:hiddify/features/settings/overview/settings_page.dart';
+import 'package:hiddify/features/subscription/widget/subscription_page.dart';
+import 'package:hiddify/features/user_center/widget/user_center_page.dart';
 import 'package:hiddify/utils/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -35,6 +37,8 @@ part 'routing_config_notifier.g.dart';
 // each branch in go router has its own focus scope
 final branchesScope = <String, FocusScopeNode>{
   'home': FocusScopeNode(),
+  'userCenter': FocusScopeNode(),
+  'subscription': FocusScopeNode(),
   'profiles': FocusScopeNode(),
   'settings': FocusScopeNode(),
   'logs': FocusScopeNode(),
@@ -48,11 +52,19 @@ final loadingConfig = RoutingConfig(
 
 String getNameOfBranch(bool isMobileBreakpoint, bool showProfilesAction, int index) => isMobileBreakpoint
     ? ['home', 'settings'][index]
-    : ['home', if (showProfilesAction) 'profiles', 'settings', 'logs', 'about'][index];
+    : ['home', 'userCenter', 'subscription', if (showProfilesAction) 'profiles', 'settings', 'logs', 'about'][index];
 
 int getIndexOfBranch(bool isMobileBreakpoint, bool showProfilesAction, String name) => isMobileBreakpoint
     ? ['home', 'settings'].indexOf(name)
-    : ['home', if (showProfilesAction) 'profiles', 'settings', 'logs', 'about'].indexOf(name);
+    : [
+        'home',
+        'userCenter',
+        'subscription',
+        if (showProfilesAction) 'profiles',
+        'settings',
+        'logs',
+        'about',
+      ].indexOf(name);
 
 @Riverpod(keepAlive: true)
 class RoutingConfigNotifier extends _$RoutingConfigNotifier {
@@ -147,6 +159,26 @@ class RoutingConfigNotifier extends _$RoutingConfigNotifier {
                 ),
               ],
             ),
+            if (!isMobileBreakpoint) ...[
+              StatefulShellBranch(
+                routes: <GoRoute>[
+                  GoRoute(
+                    name: 'userCenter',
+                    path: '/user-center',
+                    builder: (_, _) => FocusScope(node: branchesScope['userCenter'], child: const UserCenterPage()),
+                  ),
+                ],
+              ),
+              StatefulShellBranch(
+                routes: <GoRoute>[
+                  GoRoute(
+                    name: 'subscription',
+                    path: '/subscription',
+                    builder: (_, _) => FocusScope(node: branchesScope['subscription'], child: const SubscriptionPage()),
+                  ),
+                ],
+              ),
+            ],
             if (showProfilesAction)
               StatefulShellBranch(
                 routes: <GoRoute>[

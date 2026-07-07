@@ -1,6 +1,6 @@
 {
   "common": {
-    "appTitle": "Hiddify",
+    "appTitle": "Nyro",
     "start": "开始",
     "version": "版本",
     "ok": "确定",
@@ -95,7 +95,7 @@
   "intro": {
     "banner": "畅享无限制网络的所需一切",
     "termsAndPolicyCaution(rich)": "继续即表示您同意 ${tap(@:pages.about.termsAndConditions)}",
-    "info(rich)": "由 Hiddify 用 ❤️ 制作 - ${tap_source(开源)} (${tap_license(许可证)})"
+    "info(rich)": "由 Nyro 用 ❤️ 制作 - ${tap_source(开源)} (${tap_license(许可证)})"
   },
   "pages": {
     "home": {
@@ -125,6 +125,56 @@
         "timeout": "延迟测试超时",
         "testing": "延迟：测试中..."
       }
+    },
+    "userCenter": {
+      "title": "用户中心",
+      "notLoggedIn": "未登录",
+      "loginHint": "登录后可查看 Xboard 账户与订阅状态",
+      "email": "邮箱",
+      "password": "密码",
+      "login": "登录",
+      "loggingIn": "登录中...",
+      "logout": "退出登录",
+      "refresh": "刷新",
+      "accountOverview": "账户信息",
+      "balance": "余额",
+      "plan": "套餐",
+      "traffic": "流量",
+      "upload": "上传",
+      "download": "下载",
+      "expireAt": "到期时间",
+      "noPlan": "暂无套餐",
+      "loadFailed": "加载账户失败",
+      "loginSuccess": "登录成功",
+      "emailRequired": "请输入邮箱",
+      "passwordRequired": "请输入密码",
+      "showPassword": "显示密码",
+      "hidePassword": "隐藏密码"
+    },
+    "subscription": {
+      "title": "订阅",
+      "empty": "暂无套餐",
+      "planList": "套餐列表",
+      "availablePlans": "${count} 个套餐",
+      "refresh": "刷新",
+      "loadFailed": "加载套餐失败",
+      "traffic": "流量",
+      "trafficGb": "${traffic} GB",
+      "deviceLimit": "设备",
+      "deviceCount": "${count} 台设备",
+      "speedLimit": "速度",
+      "unlimitedSpeed": "不限速",
+      "speedMbps": "${speed} Mbps",
+      "noPrice": "暂无价格",
+      "notForSale": "暂不可购买",
+      "priceMonth": "月付",
+      "priceQuarter": "季付",
+      "priceHalfYear": "半年",
+      "priceYear": "年付",
+      "priceTwoYear": "两年",
+      "priceThreeYear": "三年",
+      "priceOnetime": "一次性",
+      "priceReset": "重置流量"
     },
     "profiles": {
       "title": "配置文件",
@@ -643,7 +693,7 @@
       "msg": "让我们从添加一个包含您 VPN 连接详细信息的配置文件开始。\n\n还没有 VPN 服务器？别担心，按照下面的教程，您可以快速免费地设置一个。",
       "helpBtn": {
         "label": "告诉我如何操作",
-        "url": "https://hiddify.com/manager/"
+        "url": "https://nyro.lol/"
       }
     },
     "unknownDomainsWarning": {

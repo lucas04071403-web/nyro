@@ -71,7 +71,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "app.hiddify.com"
+        applicationId "app.nyro.lol"
         minSdkVersion flutter.minSdkVersion
         targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
@@ -146,8 +146,8 @@ dependencies {
     implementation 'io.grpc:grpc-okhttp:1.64.0'
     implementation 'io.grpc:grpc-protobuf-lite:1.64.0'
     implementation 'io.grpc:grpc-stub:1.64.0'
-//    protoPath(project(':hiddify_api'))
-//    implementation project(':hiddify_api')
+//    protoPath(project(':nyro_api'))
+//    implementation project(':nyro_api')
 
 
 

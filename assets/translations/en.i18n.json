@@ -1,6 +1,6 @@
 ﻿{
   "common": {
-    "appTitle": "Hiddify",
+    "appTitle": "Nyro",
     "start": "Start",
     "version": "Version",
     "ok": "OK",
@@ -95,7 +95,7 @@
   "intro": {
     "banner": "All you need for an unrestricted internet",
     "termsAndPolicyCaution(rich)": "By continuing you agree to ${tap(@:pages.about.termsAndConditions)}",
-    "info(rich)": "Made with ❤️ by Hiddify - ${tap_source(Open Source)} (${tap_license(License)})"
+    "info(rich)": "Made with ❤️ by Nyro - ${tap_source(Open Source)} (${tap_license(License)})"
   },
   "pages": {
     "home": {
@@ -125,6 +125,56 @@
         "timeout": "Delay test timeout",
         "testing": "Delay: testing..."
       }
+    },
+    "userCenter": {
+      "title": "User Center",
+      "notLoggedIn": "Not logged in",
+      "loginHint": "Sign in to view your Xboard account and subscription status",
+      "email": "Email",
+      "password": "Password",
+      "login": "Log in",
+      "loggingIn": "Logging in...",
+      "logout": "Log out",
+      "refresh": "Refresh",
+      "accountOverview": "Account overview",
+      "balance": "Balance",
+      "plan": "Plan",
+      "traffic": "Traffic",
+      "upload": "Upload",
+      "download": "Download",
+      "expireAt": "Expires at",
+      "noPlan": "No plan",
+      "loadFailed": "Failed to load account",
+      "loginSuccess": "Logged in",
+      "emailRequired": "Enter your email",
+      "passwordRequired": "Enter your password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password"
+    },
+    "subscription": {
+      "title": "Subscription",
+      "empty": "No plans",
+      "planList": "Plan list",
+      "availablePlans": "${count} plans",
+      "refresh": "Refresh",
+      "loadFailed": "Failed to load plans",
+      "traffic": "Traffic",
+      "trafficGb": "${traffic} GB",
+      "deviceLimit": "Devices",
+      "deviceCount": "${count} devices",
+      "speedLimit": "Speed",
+      "unlimitedSpeed": "Unlimited",
+      "speedMbps": "${speed} Mbps",
+      "noPrice": "No price",
+      "notForSale": "Not for sale",
+      "priceMonth": "Monthly",
+      "priceQuarter": "Quarterly",
+      "priceHalfYear": "Half-year",
+      "priceYear": "Yearly",
+      "priceTwoYear": "Two years",
+      "priceThreeYear": "Three years",
+      "priceOnetime": "One-time",
+      "priceReset": "Traffic reset"
     },
     "profiles": {
       "title": "Profiles",
@@ -643,7 +693,7 @@
       "msg": "Let's get started by adding a connection profile that includes your VPN connection details.\n\nDon’t have a VPN server yet? No worries—just follow the tutorial below to set one up quickly and for free.",
       "helpBtn": {
         "label": "Show me how",
-        "url": "https://hiddify.com/manager/"
+        "url": "https://nyro.lol/"
       }
     },
     "unknownDomainsWarning": {

@@ -72,6 +72,7 @@ class ProfileParser {
             cancelToken: CancelToken(),
             ref: _ref,
           );
+          await normalizeSubscriptionContent(tempFilePath: tempFilePath);
         }, (_, _) => const ProfileFailure.unexpected())
         .flatMap((_) => TaskEither.fromEither(populateHeaders(content: content)))
         .flatMap(
@@ -176,6 +177,7 @@ class ProfileParser {
       cancelToken: cancelToken ?? CancelToken(),
       ref: _ref,
     );
+    await normalizeSubscriptionContent(tempFilePath: tempFilePath);
     // fixing headers before return
     return rs.headers.map.map((key, value) {
       if (value.length == 1) return MapEntry(key, value.first);
@@ -239,6 +241,93 @@ class ProfileParser {
     if (results.any((e) => e != null)) {
       final newContent = results.join("\n");
       await File(tempFilePath).writeAsString(newContent);
+    }
+  }
+
+  static Future<void> normalizeSubscriptionContent({required String tempFilePath}) async {
+    final file = File(tempFilePath);
+    final content = await file.readAsString();
+    final normalized = normalizeSubscriptionLinks(content);
+    if (normalized != content) await file.writeAsString(normalized);
+  }
+
+  @visibleForTesting
+  static String normalizeSubscriptionLinks(String content) {
+    return _normalizeSubscriptionLinks(content, dropRealityLinks: false);
+  }
+
+  static String normalizeSubscriptionLinksForCompatibleImport(String content) {
+    return _normalizeSubscriptionLinks(content, dropRealityLinks: true);
+  }
+
+  static String _normalizeSubscriptionLinks(String content, {required bool dropRealityLinks}) {
+    final decoded = _tryDecodeBase64(content.trim());
+    final source = decoded ?? content;
+    final lines = source.split('\n');
+    var changed = false;
+    final normalizedLines = <String>[];
+    for (final line in lines) {
+      final normalized = _normalizeProxyLink(line, dropRealityLinks: dropRealityLinks, onChanged: () => changed = true);
+      if (normalized != null) normalizedLines.add(normalized);
+    }
+    if (!changed) return content;
+    return normalizedLines.join('\n');
+  }
+
+  static String? _normalizeProxyLink(
+    String line, {
+    required bool dropRealityLinks,
+    required void Function() onChanged,
+  }) {
+    final trimmed = line.trim();
+    if (trimmed.isEmpty) return line;
+
+    final uri = Uri.tryParse(trimmed);
+    if (uri == null || uri.scheme != 'vless') return line;
+
+    final query = Map<String, String>.from(uri.queryParameters);
+    final isReality = query['security']?.toLowerCase() == 'reality';
+    if (!isReality) return line;
+    if (dropRealityLinks) {
+      onChanged();
+      return null;
+    }
+
+    final fingerprint = query['fp']?.isNotEmpty == true
+        ? query['fp']!
+        : query['fingerprint']?.isNotEmpty == true
+        ? query['fingerprint']!
+        : 'chrome';
+    var changed = false;
+    if (query['fp']?.isNotEmpty != true) {
+      query['fp'] = fingerprint;
+      changed = true;
+    }
+    if (query['fingerprint']?.isNotEmpty != true) {
+      query['fingerprint'] = fingerprint;
+      changed = true;
+    }
+    if (query['utls']?.isNotEmpty != true) {
+      query['utls'] = fingerprint;
+      changed = true;
+    }
+    if (!changed) return line;
+    onChanged();
+    return uri.replace(queryParameters: query).toString();
+  }
+
+  static String _padBase64(String value) {
+    final padding = value.length % 4;
+    if (padding == 0) return value;
+    return value.padRight(value.length + 4 - padding, '=');
+  }
+
+  static String? _tryDecodeBase64(String value) {
+    try {
+      final compact = value.replaceAll(RegExp(r'\s+'), '');
+      return utf8.decode(base64.decode(base64.normalize(_padBase64(compact))));
+    } catch (_) {
+      return null;
     }
   }
 

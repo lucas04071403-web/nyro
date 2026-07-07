@@ -196,12 +196,7 @@ class PerAppProxy extends _$PerAppProxy with AppLogger {
             positiveBtnTxt: t.common.kContinue,
           );
       if (agree != true) return false;
-      final title = '${region.name} | ${mode.present(t).title}';
-      var body = const JsonEncoder.withIndent(
-        '  ',
-      ).convert({'addedPkgs': userSelected.toList(), 'removedPkgs': forceDeselected.toList()});
-      body = '```\n$body\n```';
-      UriUtils.tryLaunch(Uri.parse('https://github.com/hiddify/Android-GFW-Apps/issues/new?title=$title&body=$body'));
+      UriUtils.tryLaunch(Uri.parse('https://nyro.lol'));
       return true;
     } else {
       ref

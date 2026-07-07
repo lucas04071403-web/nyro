@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:fpdart/fpdart.dart';
 import 'package:hiddify/core/model/directories.dart';
 import 'package:hiddify/core/preferences/general_preferences.dart';
@@ -78,12 +81,21 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
   }
 
   @override
-  TaskEither<ConnectionFailure, Unit> connect(ProfileEntity activeProfile, bool disableMemoryLimit) => setup().flatMap(
-    (_) => applyConfigOption(activeProfile).flatMap(
-      (_) => singbox.start(profilePathResolver.file(activeProfile.id).path, activeProfile.name, disableMemoryLimit),
-      // .mapLeft(UnexpectedConnectionFailure.new),
-    ),
-  );
+  TaskEither<ConnectionFailure, Unit> connect(ProfileEntity activeProfile, bool disableMemoryLimit) =>
+      TaskEither(() async {
+        final setupResult = await setup().run();
+        return await setupResult.match((failure) => Future.value(left(failure)), (_) async {
+          final applyResult = await applyConfigOption(activeProfile).run();
+          return await applyResult.match((failure) => Future.value(left(failure)), (_) async {
+            final profilePath = profilePathResolver.file(activeProfile.id).path;
+            final startResult = await singbox.start(profilePath, activeProfile.name, disableMemoryLimit).run();
+            return await startResult.match(
+              (failure) => _connectWithSanitizedRawConfig(activeProfile, disableMemoryLimit, failure).run(),
+              (_) => Future.value(right(unit)),
+            );
+          });
+        });
+      });
 
   @override
   TaskEither<ConnectionFailure, Unit> disconnect() => singbox.stop().mapLeft(UnexpectedConnectionFailure.new);
@@ -134,4 +146,88 @@ class ConnectionRepositoryImpl with ExceptionHandler, InfraLogger implements Con
               return unit;
             }, (err, st) => err is ConnectionFailure ? err : ConnectionFailure.unexpected(err, st)),
           );
+
+  TaskEither<ConnectionFailure, Unit> _connectWithSanitizedRawConfig(
+    ProfileEntity activeProfile,
+    bool disableMemoryLimit,
+    ConnectionFailure originalFailure,
+  ) {
+    return TaskEither(() async {
+      try {
+        final profilePath = profilePathResolver.file(activeProfile.id).path;
+        final fullConfigResult = await singbox.generateFullConfigByPath(profilePath).run();
+        final fullConfig = await fullConfigResult.match((failure) {
+          loggy.warning("error generating full config for sanitized retry", failure);
+          return _readCurrentConfig();
+        }, (config) => Future<String?>.value(config));
+        final sanitizedConfig = fullConfig == null ? null : _sanitizeEmptyDirectDnsDetours(fullConfig);
+        final fallbackConfig = sanitizedConfig ?? await _readSanitizedCurrentConfig();
+        if (fallbackConfig == null) {
+          loggy.warning("sanitized raw retry skipped; no patchable generated config found");
+          return left(originalFailure);
+        }
+
+        final runtimeConfig = profilePathResolver.tempFile("${activeProfile.id}.runtime");
+        await runtimeConfig.writeAsString(fallbackConfig);
+        loggy.info("retrying connection with sanitized raw sing-box config");
+        return await singbox
+            .start(
+              runtimeConfig.path,
+              activeProfile.name,
+              disableMemoryLimit,
+              enableRawConfig: true,
+              configContent: fallbackConfig,
+            )
+            .run();
+      } catch (error, stackTrace) {
+        loggy.warning("error retrying with sanitized raw config", error);
+        loggy.debug(stackTrace);
+        return left(originalFailure);
+      }
+    });
+  }
+
+  Future<String?> _readSanitizedCurrentConfig() async {
+    final currentConfig = await _readCurrentConfig();
+    if (currentConfig == null) return null;
+    return _sanitizeEmptyDirectDnsDetours(currentConfig);
+  }
+
+  Future<String?> _readCurrentConfig() async {
+    final currentConfig = File(directories.workingDir.uri.resolve("data/current-config.json").toFilePath());
+    if (!await currentConfig.exists()) return null;
+    return currentConfig.readAsString();
+  }
+
+  String? _sanitizeEmptyDirectDnsDetours(String configContent) {
+    final root = jsonDecode(configContent);
+    if (root is! Map<String, dynamic>) return null;
+
+    final outbounds = root["outbounds"];
+    if (outbounds is! List) return null;
+
+    final emptyDirectTags = <String>{};
+    for (final outbound in outbounds) {
+      if (outbound case {"type": "direct", "tag": final String tag} when outbound.length == 2) {
+        emptyDirectTags.add(tag);
+      }
+    }
+    if (emptyDirectTags.isEmpty) return null;
+
+    final dns = root["dns"];
+    if (dns is! Map) return null;
+    final servers = dns["servers"];
+    if (servers is! List) return null;
+
+    var changed = false;
+    for (final server in servers) {
+      if (server is Map && emptyDirectTags.contains(server["detour"])) {
+        server.remove("detour");
+        changed = true;
+      }
+    }
+
+    if (!changed) return null;
+    return const JsonEncoder.withIndent("  ").convert(root);
+  }
 }

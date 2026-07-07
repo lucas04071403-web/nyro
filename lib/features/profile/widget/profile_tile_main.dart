@@ -16,19 +16,10 @@ class ProfileTileMain extends HookConsumerWidget {
   final ProfileEntity profile;
   final bool isMain;
   static const verifiedDomains = [
-    'hiddify.com',
-    // 't.me',
-    // 'telegram.me',
-    // 'instagram.com',
-    // 'x.com',
-    // 'facebook.com',
+    'nyro.lol',
   ];
   static const verifiedLinks = [
-    'https://t.me/hiddify',
-    'https://t.me/hiddify_board',
-    'https://instagram.com/hiddify_com',
-    'https://x.com/hiddify_com',
-    'https://facebook.com/hiddify',
+    'https://nyro.lol',
   ];
   Future<void> _launchUrlWithCheck(BuildContext context, WidgetRef ref, String url) async {
     final uri = Uri.parse(url);
@@ -136,7 +127,10 @@ class ProfileTileMain extends HookConsumerWidget {
                                 onTap: () => _launchUrlWithCheck(context, ref, subInfo.webPageUrl!),
                                 borderRadius: BorderRadius.circular(8),
                                 child: _InfoItem(
-                                  icon: _getLinkIcon(subInfo.webPageUrl!, FluentIcons.building_shop_24_regular),
+                                  icon: _getLinkIcon(
+                                    subInfo.webPageUrl!,
+                                    const Icon(FluentIcons.building_shop_24_regular),
+                                  ),
                                   label: t.components.subscriptionInfo.profileSite,
                                   value: _formatSupportLink(subInfo.webPageUrl!),
                                 ),
@@ -149,7 +143,7 @@ class ProfileTileMain extends HookConsumerWidget {
                                 onTap: () => _launchUrlWithCheck(context, ref, subInfo.supportUrl!),
                                 borderRadius: BorderRadius.circular(8),
                                 child: _InfoItem(
-                                  icon: _getLinkIcon(subInfo.supportUrl!, FontAwesomeIcons.headset),
+                                  icon: _getLinkIcon(subInfo.supportUrl!, const FaIcon(FontAwesomeIcons.headset)),
                                   label: t.components.subscriptionInfo.profileSupport,
                                   value: _formatSupportLink(subInfo.supportUrl!),
                                 ),
@@ -167,26 +161,26 @@ class ProfileTileMain extends HookConsumerWidget {
     );
   }
 
-  IconData _getLinkIcon(String url, [IconData? icon]) {
+  Widget _getLinkIcon(String url, [Widget? icon]) {
     final uri = Uri.parse(url);
     final host = uri.host.toLowerCase();
 
     if (host.endsWith('telegram.me') || host.endsWith('t.me')) {
-      return FontAwesomeIcons.telegram;
+      return const FaIcon(FontAwesomeIcons.telegram);
     }
     if (host.endsWith('instagram.com')) {
-      return FontAwesomeIcons.instagram;
+      return const FaIcon(FontAwesomeIcons.instagram);
     }
     if (host.endsWith('twitter.com')) {
-      return FontAwesomeIcons.xTwitter;
+      return const FaIcon(FontAwesomeIcons.xTwitter);
     }
     if (host.endsWith('facebook.com')) {
-      return FontAwesomeIcons.facebook;
+      return const FaIcon(FontAwesomeIcons.facebook);
     }
-    if (host.endsWith('hiddify.com')) {
+    if (host.endsWith('nyro.lol')) {
       // return IconData();
     }
-    return icon ?? FluentIcons.link_24_regular;
+    return icon ?? const Icon(FluentIcons.link_24_regular);
   }
 
   String _formatSupportLink(String url) {
@@ -205,8 +199,8 @@ class ProfileTileMain extends HookConsumerWidget {
     if (host.endsWith('facebook.com')) {
       return uri.pathSegments.lastWhere((e) => e.isNotEmpty, orElse: () => '');
     }
-    if (host.endsWith('hiddify.com')) {
-      return "Hiddify";
+    if (host.endsWith('nyro.lol')) {
+      return "Nyro";
     }
     return uri.host;
   }
@@ -273,7 +267,7 @@ class _UsageRow extends StatelessWidget {
 class _InfoItem extends StatelessWidget {
   const _InfoItem({required this.icon, required this.label, required this.value});
 
-  final IconData icon;
+  final Widget icon;
   final String label;
   final String value;
 
@@ -289,7 +283,10 @@ class _InfoItem extends StatelessWidget {
       // ),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
+          IconTheme.merge(
+            data: IconThemeData(size: 20, color: theme.colorScheme.onSurfaceVariant),
+            child: icon,
+          ),
           const Gap(12),
           Expanded(
             child: Column(

@@ -4,13 +4,15 @@ permissions:
   contents: write
 
 on:
-  release:
-    types: [released]   # Run the action when a GitHub release is published
-
-  # schedule:
-  #   - cron:  '0 */6 * * *'  # Run the action every 6 hours
-
-  workflow_dispatch:    # Manually run the action
+  workflow_dispatch:
+    inputs:
+      store-id:
+        description: "Microsoft Store product id"
+        required: true
+      asset-name-pattern:
+        description: "Release asset name pattern to replace"
+        required: true
+        default: "Nyro-Windows-x86_64"
 
 jobs:
   upload-store-msix-to-release:
@@ -20,6 +22,6 @@ jobs:
     - name: Upload store MSIX to release
       uses: hiddify/Upload-Microsoft-Store-MSIX-Package-to-GitHub-Release@develop
       with:
-        store-id: 9pdfnl3qv2s5
+        store-id: ${{ inputs.store-id }}
         token: ${{ secrets.GITHUB_TOKEN }}
-        asset-name-pattern: Hiddify-Windows-Setup-x64		# Optional
+        asset-name-pattern: ${{ inputs.asset-name-pattern }}
