@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nyro/features/profile/data/profile_parser.dart';
 import 'package:nyro/features/profile/model/profile_entity.dart';
@@ -160,6 +162,61 @@ void main() {
             local: (lp) {},
           );
         });
+      });
+    });
+  });
+
+  group("xboard normalization", () {
+    String ssLink(String name) {
+      return "ss://YWVzLTEyOC1nY206cGFzc3dvcmRAMTI3LjAuMC4xOjQ3MDAw#${Uri.encodeComponent(name)}";
+    }
+
+    test("Should filter Xboard metadata shadowsocks links", () {
+      final subscription = [
+        ssLink("剩余流量：10GB"),
+        ssLink("香港｜01"),
+        ssLink("距离下次重置剩余：12 天"),
+        "vless://00000000-0000-0000-0000-000000000000@example.com:443?security=reality#${Uri.encodeComponent("日本｜01")}",
+        ssLink("套餐到期：2026-12-31"),
+      ].join("\n");
+      final encoded = base64.encode(utf8.encode(subscription));
+
+      final normalized = ProfileParser.normalizeSubscriptionLinks(encoded);
+      final lines = normalized.split("\n").where((line) => line.trim().isNotEmpty).toList();
+
+      expect(lines, hasLength(2));
+      expect(normalized, contains(Uri.encodeComponent("香港｜01")));
+      expect(normalized, contains(Uri.encodeComponent("日本｜01")));
+      expect(normalized, isNot(contains("剩余流量")));
+      expect(normalized, isNot(contains("距离下次重置")));
+      expect(normalized, isNot(contains("套餐到期")));
+    });
+
+    test("Should keep Xboard optimized profile headers for sing-box override", () {
+      final headers = ProfileParser.populateHeaders(
+        content: "",
+        remoteHeaders: const {
+          "connection-test-url": "http://www.gstatic.com/generate_204",
+          "url-test-interval": "300",
+          "remote-dns-address": "https://1.1.1.1/dns-query",
+          "remote-dns-domain-strategy": "ipv4_only",
+          "direct-dns-address": "223.5.5.5",
+          "direct-dns-domain-strategy": "ipv4_only",
+          "ipv6-mode": "ipv4_only",
+        },
+      );
+
+      expect(headers.isRight(), true);
+      headers.match((l) {}, (r) {
+        expect(r["url-test-interval"], 300);
+        final override = jsonDecode(ProfileParser.profileOverride(populatedHeaders: r, userOverride: null)) as Map;
+        expect(override["connection-test-url"], "http://www.gstatic.com/generate_204");
+        expect(override["url-test-interval"], 300);
+        expect(override["remote-dns-address"], "https://1.1.1.1/dns-query");
+        expect(override["remote-dns-domain-strategy"], "ipv4_only");
+        expect(override["direct-dns-address"], "223.5.5.5");
+        expect(override["direct-dns-domain-strategy"], "ipv4_only");
+        expect(override["ipv6-mode"], "ipv4_only");
       });
     });
   });

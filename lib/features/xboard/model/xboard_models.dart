@@ -153,6 +153,19 @@ class XboardOrderCheckout {
   }
 }
 
+class XboardSubscriptionDownload {
+  const XboardSubscriptionDownload({required this.content, required this.headers});
+
+  final String content;
+  final Map<String, dynamic> headers;
+
+  String? get subscriptionUserInfo {
+    final value = headers['subscription-userinfo'];
+    if (value == null || value.toString().trim().isEmpty) return null;
+    return value.toString();
+  }
+}
+
 abstract class XboardOrderStatus {
   static const pending = 0;
   static const processing = 1;
@@ -274,6 +287,12 @@ class XboardAccount {
   bool get isExpired => expiredAt?.isBefore(DateTime.now()) ?? false;
   bool get isTrafficExhausted => transferEnable > 0 && usedTraffic >= transferEnable;
   bool get hasValidSubscription => subscribeUrl.trim().isNotEmpty && plan != null && !isExpired && !isTrafficExhausted;
+
+  String? get subscriptionUserInfoHeader {
+    if (transferEnable <= 0 && expiredAt == null) return null;
+    final expire = expiredAt == null ? 0 : expiredAt!.millisecondsSinceEpoch ~/ 1000;
+    return 'upload=$upload; download=$download; total=$transferEnable; expire=$expire';
+  }
 }
 
 int _asInt(Object? value) {

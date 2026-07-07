@@ -38,12 +38,17 @@ class ProfileParser {
   static const allowedOverrideConfigs = [
     'connection-test-url',
     'direct-dns-address',
+    'direct-dns-domain-strategy',
+    'ipv6-mode',
     'remote-dns-address',
+    'remote-dns-domain-strategy',
+    'url-test-interval',
     'tls-tricks',
     'chain-status',
     'extra-security',
   ];
   static const allowedProfileHeaders = [
+    ...allowedOverrideConfigs,
     'profile-title',
     'content-disposition',
     'subscription-userinfo',
@@ -64,6 +69,7 @@ class ProfileParser {
     required String content,
     required String tempFilePath,
     required UserOverride? userOverride,
+    Map<String, dynamic>? profileHeaders,
   }) {
     return TaskEither.tryCatch(() async {
           await expandRemoteLinesInParallel(
@@ -74,7 +80,7 @@ class ProfileParser {
           );
           await normalizeSubscriptionContent(tempFilePath: tempFilePath);
         }, (_, _) => const ProfileFailure.unexpected())
-        .flatMap((_) => TaskEither.fromEither(populateHeaders(content: content)))
+        .flatMap((_) => TaskEither.fromEither(populateHeaders(content: content, remoteHeaders: profileHeaders)))
         .flatMap(
           (populatedHeaders) => TaskEither.fromEither(
             parse(
@@ -98,10 +104,14 @@ class ProfileParser {
     required String tempFilePath,
     required UserOverride? userOverride,
     CancelToken? cancelToken,
+    Map<String, dynamic>? profileHeaders,
   }) => _downloadProfile(url, tempFilePath, cancelToken).flatMap(
     (remoteHeaders) =>
         TaskEither.fromEither(
-          populateHeaders(content: File(tempFilePath).readAsStringSync(), remoteHeaders: remoteHeaders),
+          populateHeaders(
+            content: File(tempFilePath).readAsStringSync(),
+            remoteHeaders: _mergeProfileHeaders(remoteHeaders, profileHeaders),
+          ),
         ).flatMap(
           (populatedHeaders) => TaskEither.fromEither(
             parse(
@@ -124,10 +134,14 @@ class ProfileParser {
     required RemoteProfileEntity rp,
     required String tempFilePath,
     CancelToken? cancelToken,
+    Map<String, dynamic>? profileHeaders,
   }) => _downloadProfile(rp.url, tempFilePath, cancelToken).flatMap(
     (remoteHeaders) =>
         TaskEither.fromEither(
-          populateHeaders(content: File(tempFilePath).readAsStringSync(), remoteHeaders: remoteHeaders),
+          populateHeaders(
+            content: File(tempFilePath).readAsStringSync(),
+            remoteHeaders: _mergeProfileHeaders(remoteHeaders, profileHeaders),
+          ),
         ).flatMap(
           (populatedHeaders) => TaskEither.fromEither(
             parse(
@@ -260,6 +274,14 @@ class ProfileParser {
     return _normalizeSubscriptionLinks(content, dropRealityLinks: true);
   }
 
+  static Map<String, dynamic> _mergeProfileHeaders(
+    Map<String, dynamic> remoteHeaders,
+    Map<String, dynamic>? profileHeaders,
+  ) {
+    if (profileHeaders == null || profileHeaders.isEmpty) return remoteHeaders;
+    return {...profileHeaders, ...remoteHeaders};
+  }
+
   static String _normalizeSubscriptionLinks(String content, {required bool dropRealityLinks}) {
     final decoded = _tryDecodeBase64(content.trim());
     final source = decoded ?? content;
@@ -283,7 +305,12 @@ class ProfileParser {
     if (trimmed.isEmpty) return line;
 
     final uri = Uri.tryParse(trimmed);
-    if (uri == null || uri.scheme != 'vless') return line;
+    if (uri == null) return line;
+    if (_isXboardMetadataLink(uri)) {
+      onChanged();
+      return null;
+    }
+    if (uri.scheme != 'vless') return line;
 
     final query = Map<String, String>.from(uri.queryParameters);
     final isReality = query['security']?.toLowerCase() == 'reality';
@@ -314,6 +341,27 @@ class ProfileParser {
     if (!changed) return line;
     onChanged();
     return uri.replace(queryParameters: query).toString();
+  }
+
+  static bool _isXboardMetadataLink(Uri uri) {
+    if (uri.scheme != 'ss') return false;
+    final fragment = uri.hasFragment ? _decodeUriFragment(uri.fragment).trim() : '';
+    if (fragment.isEmpty) return false;
+
+    final compact = fragment.replaceAll(RegExp(r'\s+'), '').toLowerCase();
+    return RegExp('^(剩余|剩餘).*(流量|traffic)').hasMatch(compact) ||
+        RegExp('(套餐|账户|帳戶|订阅|訂閱|流量).*(到期|过期|過期|expire)').hasMatch(compact) ||
+        RegExp('(重置|reset).*(时间|時間|time|date|流量)').hasMatch(compact) ||
+        RegExp('(距离|距離).*重置|重置.*(剩余|剩餘|remain|left)').hasMatch(compact) ||
+        RegExp(r'^(expire|expired|expires|expiration)(\b|[:：])', caseSensitive: false).hasMatch(fragment);
+  }
+
+  static String _decodeUriFragment(String fragment) {
+    try {
+      return Uri.decodeComponent(fragment);
+    } catch (_) {
+      return fragment;
+    }
   }
 
   static String _padBase64(String value) {
@@ -350,11 +398,22 @@ class ProfileParser {
     }
     final headers = <String, dynamic>{};
     for (final entry in remoteHeaders.entries) {
-      if (allowedProfileHeaders.contains(entry.key) && entry.value != null && entry.value.toString().isNotEmpty) {
-        headers[entry.key] = entry.value;
+      final key = entry.key.toLowerCase();
+      final value = _normalizeProfileHeaderValue(key, entry.value);
+      if (allowedProfileHeaders.contains(key) && value != null && value.toString().isNotEmpty) {
+        headers[key] = value;
       }
     }
     return headers;
+  }
+
+  static Object? _normalizeProfileHeaderValue(String key, Object? value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return switch (key) {
+      'url-test-interval' => int.tryParse(text) ?? value,
+      _ => value,
+    };
   }
 
   static Map<String, dynamic> _parseHeadersFromContent(String content) {

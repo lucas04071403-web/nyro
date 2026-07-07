@@ -1,11 +1,46 @@
 # Nyro
 
-Nyro is a cross-platform proxy and VPN client for Android, Windows, macOS, and Linux.
+Nyro — это кроссплатформенный proxy/VPN-клиент для Android, Windows, macOS и Linux.
 
-Nyro is based on Hiddify App and powered by Hiddify Core and Sing-box. It keeps upstream attribution and uses an independent Nyro release channel.
+Nyro является вторичной разработкой на основе Hiddify App. Основные proxy-возможности обеспечиваются Hiddify Core и Sing-box. Проект сохраняет лицензию и указание источников вышестоящего проекта, но использует самостоятельный бренд Nyro, идентификаторы пакетов, ссылки загрузки и канал релизов.
 
-Latest release:
+## Загрузка
 
 https://github.com/lucas04071403-web/nyro/releases/latest
 
-See `LICENSE.md`, `NOTICE.md`, and `ACKNOWLEDGEMENTS.md` for license and attribution details.
+Текущий релиз:
+
+https://github.com/lucas04071403-web/nyro/releases/tag/v1.0.1
+
+## Текущие возможности
+
+- Поддержка Android, Windows, macOS и Linux.
+- Поддержка профилей и ссылок подписок, совместимых с Sing-box, V2Ray, Clash и Clash Meta.
+- Центр пользователя, подключенный к аккаунтам Xboard.
+- Регистрация с кодом подтверждения по email, вход и синхронизация аккаунта.
+- Отображение тарифов Xboard, отметка текущего тарифа и синхронизация подписки.
+- Покупка тарифов с выбором периода, способом оплаты, Epay или QR-оплатой, проверкой заказа и автоматическим обновлением после успешной оплаты.
+- Адаптация подписок Xboard для Nyro: фильтрация информационных узлов, чтение header `subscription-userinfo` и более стабильные настройки профиля для Sing-box.
+
+## Последние обновления
+
+- Добавлена регистрация Xboard с подтверждением email.
+- Добавлен поток покупки подписки Xboard и оплаты.
+- Добавлена отметка текущего тарифа в списке подписок.
+- Улучшен разбор подписок Xboard: информационные записи о трафике, сбросе и сроке действия больше не попадают в список proxy-узлов.
+- Улучшено отображение трафика и срока действия через header `subscription-userinfo`.
+- Для подписок Xboard применены настройки Nyro по умолчанию: более частый URL test, DNS с приоритетом IPv4 и сокращенный интервал автообновления.
+
+## Лицензия и указание источников
+
+Nyro основан на Hiddify App:
+
+https://github.com/hiddify/hiddify-app
+
+Также используются Hiddify Core и Sing-box:
+
+https://github.com/hiddify/hiddify-core
+
+https://github.com/SagerNet/sing-box
+
+Подробности о лицензии и благодарностях см. в `LICENSE.md`, `NOTICE.md` и `ACKNOWLEDGEMENTS.md`.

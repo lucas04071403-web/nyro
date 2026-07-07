@@ -140,13 +140,16 @@ class XboardAuthNotifier extends StateNotifier<AsyncValue<XboardAccount?>> with 
     final subscribeUrl = account.subscribeUrl.trim();
     final planName = account.plan?.name.trim();
     final profileName = planName != null && planName.isNotEmpty ? planName : 'Xboard';
-    final userOverride = UserOverride(name: profileName);
+    final userOverride = UserOverride(name: profileName, updateInterval: 6);
+    final profileHeaders = _xboardProfileHeaders(account);
 
     try {
       final activeProfile = await ref.read(activeProfileProvider.future);
       final repository = ref.read(profileRepositoryProvider).requireValue;
 
-      final upsertResult = await repository.upsertRemote(subscribeUrl, userOverride: userOverride).run();
+      final upsertResult = await repository
+          .upsertRemote(subscribeUrl, userOverride: userOverride, profileHeaders: profileHeaders)
+          .run();
       final synced = await upsertResult.match(
         (error) {
           loggy.warning('failed to sync Xboard subscription profile', error);
@@ -182,6 +185,7 @@ class XboardAuthNotifier extends StateNotifier<AsyncValue<XboardAccount?>> with 
         subscribeUrl: subscribeUrl,
         profileName: profileName,
         userOverride: userOverride,
+        profileHeaders: profileHeaders,
       );
     } catch (error, stackTrace) {
       loggy.warning('failed to auto sync Xboard subscription profile', error, stackTrace);
@@ -189,14 +193,30 @@ class XboardAuthNotifier extends StateNotifier<AsyncValue<XboardAccount?>> with 
         subscribeUrl: subscribeUrl,
         profileName: profileName,
         userOverride: userOverride,
+        profileHeaders: profileHeaders,
       );
     }
+  }
+
+  Map<String, dynamic> _xboardProfileHeaders(XboardAccount account) {
+    return {
+      'profile-update-interval': '6',
+      'connection-test-url': 'http://www.gstatic.com/generate_204',
+      'url-test-interval': 300,
+      'remote-dns-address': 'https://1.1.1.1/dns-query',
+      'remote-dns-domain-strategy': 'ipv4_only',
+      'direct-dns-address': '223.5.5.5',
+      'direct-dns-domain-strategy': 'ipv4_only',
+      'ipv6-mode': 'ipv4_only',
+      if (account.subscriptionUserInfoHeader case final subInfo?) 'subscription-userinfo': subInfo,
+    };
   }
 
   Future<bool> _syncCompatibleLocalProfile({
     required String subscribeUrl,
     required String profileName,
     required UserOverride userOverride,
+    required Map<String, dynamic> profileHeaders,
   }) async {
     try {
       final dataSource = ref.read(profileDataSourceProvider);
@@ -217,8 +237,12 @@ class XboardAuthNotifier extends StateNotifier<AsyncValue<XboardAccount?>> with 
         );
       }
 
-      final content = await ref.read(xboardApiClientProvider).getSubscriptionContent(subscribeUrl);
-      final compatibleContent = ProfileParser.normalizeSubscriptionLinksForCompatibleImport(content);
+      final subscription = await ref.read(xboardApiClientProvider).getSubscription(subscribeUrl);
+      final compatibleContent = ProfileParser.normalizeSubscriptionLinksForCompatibleImport(subscription.content);
+      final compatibleHeaders = {
+        ...profileHeaders,
+        if (subscription.subscriptionUserInfo case final subInfo?) 'subscription-userinfo': subInfo,
+      };
       final compatibleLines = compatibleContent.split('\n').where((line) => line.trim().isNotEmpty).toList();
       final compatibleRealityLines = compatibleLines.where((line) {
         final uri = Uri.tryParse(line.trim());
@@ -232,7 +256,9 @@ class XboardAuthNotifier extends StateNotifier<AsyncValue<XboardAccount?>> with 
         return false;
       }
 
-      final addResult = await repository.addLocal(compatibleContent, userOverride: userOverride).run();
+      final addResult = await repository
+          .addLocal(compatibleContent, userOverride: userOverride, profileHeaders: compatibleHeaders)
+          .run();
       return addResult.match(
         (error) {
           loggy.warning('failed to add Xboard compatible subscription profile', error);

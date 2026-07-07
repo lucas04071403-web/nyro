@@ -143,12 +143,16 @@ class XboardApiClient with InfraLogger {
   }
 
   Future<String> getSubscriptionContent(String subscribeUrl) async {
+    return (await getSubscription(subscribeUrl)).content;
+  }
+
+  Future<XboardSubscriptionDownload> getSubscription(String subscribeUrl) async {
     try {
       final response = await _dio.getUri<String>(
         Uri.parse(subscribeUrl),
         options: Options(responseType: ResponseType.plain),
       );
-      return response.data ?? '';
+      return XboardSubscriptionDownload(content: response.data ?? '', headers: _singleValueHeaders(response.headers));
     } on DioException catch (error, stackTrace) {
       loggy.warning('Xboard subscription download failed', error, stackTrace);
       throw _exceptionFromError(error);
@@ -205,6 +209,14 @@ class XboardApiClient with InfraLogger {
       final String text => jsonDecode(text) as Object?,
       _ => raw,
     };
+  }
+
+  Map<String, dynamic> _singleValueHeaders(Headers headers) {
+    return headers.map.map((key, value) {
+      final normalizedKey = key.toLowerCase();
+      if (value.length == 1) return MapEntry(normalizedKey, value.first);
+      return MapEntry(normalizedKey, value);
+    });
   }
 
   XboardApiException _exceptionFromError(DioException error) {
