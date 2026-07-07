@@ -4,9 +4,23 @@ on:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
       - 'v[0-9]+.[0-9]+.[0-9]+.*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag to build. Use draft to refresh the draft release."
+        required: true
+        default: "draft"
+      channel:
+        description: "Build channel"
+        required: true
+        default: "prod"
+        type: choice
+        options:
+          - prod
+          - dev
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -16,5 +30,5 @@ jobs:
     permissions: write-all
     with:
       upload-artifact: true
-      tag-name: "${{ github.ref_name }}"
-      channel: "${{ github.ref_type == 'tag' && endsWith(github.ref_name, 'dev') && 'dev' || github.ref_type != 'tag' && 'dev' || 'prod' }}"
+      tag_name: "${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}"
+      channel: "${{ github.event_name == 'workflow_dispatch' && inputs.channel || github.ref_type == 'tag' && endsWith(github.ref_name, 'dev') && 'dev' || github.ref_type != 'tag' && 'dev' || 'prod' }}"

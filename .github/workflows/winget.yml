@@ -1,10 +1,14 @@
 name: Publish to WinGet
 on:
-  release:
-    types: [released]
-
-env:
-    IDENTIFIER: ${{ endsWith(github.event.release.tag_name, 'dev') && 'Hiddify.Next.Beta' || 'Hiddify.Next' }}
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version or tag to publish"
+        required: true
+      identifier:
+        description: "WinGet package identifier"
+        required: true
+        default: "Nyro.Nyro"
 
 jobs:
   publish:
@@ -12,6 +16,6 @@ jobs:
     steps:
       - uses: vedantmgoyal9/winget-releaser@2
         with:
-          identifier: ${{ env.IDENTIFIER }}
-          version: ${{ github.event.release.tag_name }}
+          identifier: ${{ inputs.identifier }}
+          version: ${{ inputs.version }}
           token: ${{ secrets.WINGET_TOKEN }}

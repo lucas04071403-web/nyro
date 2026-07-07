@@ -1,62 +1,70 @@
-<div align=center>
-    
-[![Release Downloads](https://img.shields.io/github/downloads/hiddify/hiddify-next/RELEASE_TAG/total?style=flat-square&logo=github)](https://img.shields.io/github/downloads/hiddify/hiddify-next/RELEASE_TAG/)
+<div align="center">
+
+[![Release Downloads](https://img.shields.io/github/downloads/RELEASE_REPOSITORY/RELEASE_TAG/total?style=flat-square&logo=github)](https://github.com/RELEASE_REPOSITORY/releases/tag/RELEASE_TAG)
 
 </div>
 
-**Download based on your OS:**
+## Nyro RELEASE_TAG
 
-<div dir="rtl">
+下面按系统选择安装包。完整文件列表也可以在本页底部的 **Assets** 中下载。
 
-**بر اساس سیستم عامل خود دانلود کنید:**
-
-</div>
-
-
-
-<div align=left>
 <table>
-    <thead align=left>
-        <tr>
-            <th>OS</th>
-            <th>Download</th>
-        </tr>
-    </thead>
-    <tbody align=left>
-        <tr>
-        <td>Android</td><td>
-            <a href="https://github.com/hiddify/hiddify-app/releases/download/RELEASE_TAG/Hiddify-Android-universal.apk"><img src="https://img.shields.io/badge/APK-Universal-044d29.svg?logo=android"></a><br>
-            <a href="https://github.com/hiddify/hiddify-app/releases/download/RELEASE_TAG/Hiddify-Android-arm64.apk"><img src="https://img.shields.io/badge/APK-ARMv8-168039.svg?logo=android"></a><br>
-            <a href="https://github.com/hiddify/hiddify-app/releases/download/RELEASE_TAG/Hiddify-Android-arm7.apk"><img src="https://img.shields.io/badge/APK-ARMv7-45bf55.svg?logo=android"></a><br>
-            <a href="https://github.com/hiddify/hiddify-app/releases/download/RELEASE_TAG/Hiddify-Android-x86_64.apk"><img src="https://img.shields.io/badge/APK-x64-96ed89.svg?logo=android"></a>
-        </td>
-        </tr>
-        <tr>
-            <td>Windows</td><td>
-                <a href="https://github.com/hiddify/hiddify-app/releases/download/RELEASE_TAG/Hiddify-Windows-Setup-x64.Msix"><img src="https://img.shields.io/badge/OfficialSetup-x64-0078d7.svg?logo=windows"></a><br>
-                <a href="https://github.com/hiddify/hiddify-app/releases/download/RELEASE_TAG/Hiddify-Windows-Setup-x64.exe"><img src="https://img.shields.io/badge/Setup-x64-2d7d9a.svg?logo=windows"></a><br>
-                <a href="https://github.com/hiddify/hiddify-app/releases/download/RELEASE_TAG/Hiddify-Windows-Portable-x64.zip"><img src="https://img.shields.io/badge/Portable-x64-67b7d1.svg?logo=windows"></a>
-        </td>
-        </tr>
-        <tr>
-            <td>macOS (v10.15+)</td>
-            <td><a href="https://github.com/hiddify/hiddify-app/releases/download/RELEASE_TAG/Hiddify-MacOS.dmg"><img src="https://img.shields.io/badge/DMG-Universal-ea005e.svg?logo=apple"></a><br>
-            <a href="https://github.com/hiddify/hiddify-app/releases/download/RELEASE_TAG/Hiddify-MacOS-Installer.pkg"><img src="https://img.shields.io/badge/PKG-Universal-bc544b.svg?logo=apple" /></a></a></td>
-        </tr>
-        <tr>
-            <td>Linux</td>
-            <td><a href="https://github.com/hiddify/hiddify-app/releases/download/RELEASE_TAG/Hiddify-Linux-x64.AppImage"><img src="https://img.shields.io/badge/AppImage-x64-f84e29.svg?logo=linux"> </a><br>
-            <a href="https://github.com/hiddify/hiddify-app/releases/download/RELEASE_TAG/Hiddify-Debian-x64.deb"><img src="https://img.shields.io/badge/DebPackage-x64-FF9966.svg?logo=debian"> </a><br>
-            <a href="https://github.com/hiddify/hiddify-app/releases/download/RELEASE_TAG/Hiddify-rpm-x64.rpm"><img src="https://img.shields.io/badge/RpmPackage-x64-F1B42F.svg?logo=redhat"> </a></td>
-        </tr>
-    </tbody>
+  <thead>
+    <tr>
+      <th>系统</th>
+      <th>推荐下载</th>
+      <th>其他格式</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Android</td>
+      <td>
+        <a href="https://github.com/RELEASE_REPOSITORY/releases/download/RELEASE_TAG/Nyro-RELEASE_TAG-Android-universal.apk">Universal APK</a><br>
+        <a href="https://github.com/RELEASE_REPOSITORY/releases/download/RELEASE_TAG/Nyro-RELEASE_TAG-Android-arm64.apk">ARM64 APK</a>
+      </td>
+      <td>
+        <a href="https://github.com/RELEASE_REPOSITORY/releases/download/RELEASE_TAG/Nyro-RELEASE_TAG-Android-arm7.apk">ARMv7 APK</a><br>
+        <a href="https://github.com/RELEASE_REPOSITORY/releases/download/RELEASE_TAG/Nyro-RELEASE_TAG-Android-x86_64.apk">x86_64 APK</a><br>
+        <a href="https://github.com/RELEASE_REPOSITORY/releases/download/RELEASE_TAG/Nyro-RELEASE_TAG-Android-market.aab">Google Play AAB</a>
+      </td>
+    </tr>
+    <tr>
+      <td>Windows</td>
+      <td>
+        <a href="https://github.com/RELEASE_REPOSITORY/releases/download/RELEASE_TAG/Nyro-RELEASE_TAG-Windows-Setup-x86_64.exe">EXE Installer</a>
+      </td>
+      <td>
+        <a href="https://github.com/RELEASE_REPOSITORY/releases/download/RELEASE_TAG/Nyro-RELEASE_TAG-Windows-x86_64.msix">MSIX Package</a><br>
+        <a href="https://github.com/RELEASE_REPOSITORY/releases/download/RELEASE_TAG/Nyro-RELEASE_TAG-Windows-Portable-x86_64.zip">Portable ZIP</a>
+      </td>
+    </tr>
+    <tr>
+      <td>macOS</td>
+      <td>
+        <a href="https://github.com/RELEASE_REPOSITORY/releases/download/RELEASE_TAG/Nyro-RELEASE_TAG-macOS.dmg">DMG</a>
+      </td>
+      <td>
+        <a href="https://github.com/RELEASE_REPOSITORY/releases/download/RELEASE_TAG/Nyro-RELEASE_TAG-macOS-Installer.pkg">PKG Installer</a>
+      </td>
+    </tr>
+    <tr>
+      <td>Linux</td>
+      <td>
+        <a href="https://github.com/RELEASE_REPOSITORY/releases/download/RELEASE_TAG/Nyro-RELEASE_TAG-Linux-x86_64.AppImage">AppImage</a>
+      </td>
+      <td>
+        <a href="https://github.com/RELEASE_REPOSITORY/releases/download/RELEASE_TAG/Nyro-RELEASE_TAG-Linux-x86_64.AppImage.tar.gz">Portable AppImage tar.gz</a><br>
+        <a href="https://github.com/RELEASE_REPOSITORY/releases/download/RELEASE_TAG/Nyro-RELEASE_TAG-Linux-x86_64.deb">Debian/Ubuntu .deb</a>
+      </td>
+    </tr>
+  </tbody>
 </table>
 
+## 使用方式
 
-</div>
+- 正式发布：推送 `vX.Y.Z` tag 后自动构建并创建 GitHub Release。
+- 预发布：推送 `vX.Y.Z.dev` tag，Release 会标记为 pre-release。
+- 草稿构建：在 GitHub Actions 的 Release 工作流中手动运行，`tag_name` 填 `draft`。
 
-<div dir="ltr">
-  
-**List of all changes:** [ChangeLog](https://github.com/hiddify/hiddify-app/blob/main/HISTORY.md)
-
-</div>
+**完整变更记录：** [HISTORY.md](https://github.com/RELEASE_REPOSITORY/blob/main/HISTORY.md)
