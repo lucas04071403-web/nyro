@@ -305,6 +305,10 @@ jobs:
           $targets = "${{ matrix.targets }}".Split(',')
           foreach ($ext in $targets) {
             $ext = $ext.Trim()
+            if ($ext -eq "msix" -and "${{ env.HAS_WINDOWS_SIGNING_KEY }}" -ne "true") {
+              Write-Warning "Skipping unsigned MSIX release asset because WINDOWS_SIGNING_KEY is not configured."
+              continue
+            }
             $key = "TARGET_NAME_$ext"
             $targetName = (Get-Item "env:$key").Value
             

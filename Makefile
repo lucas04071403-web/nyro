@@ -304,7 +304,7 @@ windows-zip-release:
 	mkdir -p Nyro; \
 	unzip -q "$$ZIP_FILE" -d Nyro/; \
 	rm "$$ZIP_FILE"; \
-	tar -a -cf "$$FILE_NAME.zip" Nyro; \
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "Compress-Archive -Path 'Nyro' -DestinationPath '$$FILE_NAME.zip' -Force"; \
 	rm -rf Nyro; \
 	$(GREEN)Successful$(DONE)
 

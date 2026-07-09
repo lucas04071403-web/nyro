@@ -39,7 +39,6 @@ and attribution details are included in `LICENSE.md`, `NOTICE.md`, and
         <a href="https://github.com/RELEASE_REPOSITORY/releases/download/RELEASE_TAG/Nyro-RELEASE_TAG-Windows-Setup-x86_64.exe">EXE Installer</a>
       </td>
       <td>
-        <a href="https://github.com/RELEASE_REPOSITORY/releases/download/RELEASE_TAG/Nyro-RELEASE_TAG-Windows-x86_64.msix">MSIX Package</a><br>
         <a href="https://github.com/RELEASE_REPOSITORY/releases/download/RELEASE_TAG/Nyro-RELEASE_TAG-Windows-Portable-x86_64.zip">Portable ZIP</a>
       </td>
     </tr>
